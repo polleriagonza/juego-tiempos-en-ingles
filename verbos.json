@@ -1,0 +1,253 @@
+{
+    "verbos": [
+        {
+            "id": 1,
+            "verbo": "play",
+            "traduccion": "jugar",
+            "conjugar_pronombre": [
+                {
+                    "pronombre": "I",
+                    "traduccion": "yo",
+                    "conjugar_tiempos": {
+                            "tiempo_presente": {
+                                "presente_simple": {
+                                    "positivo": {
+                                         "conjugacion": "I play",
+                                         "traduccion": "yo juego",
+                                         "auxiliar": "---"              
+                                    },
+                                    "negativo": {
+                                        "conjugacion": "I don't play",
+                                        "traduccion": "yo no juego",
+                                        "auxiliar": "don't - do not"
+                                    },
+                                    "interrogativo": {
+                                        "conjugacion": "Do I play?",
+                                        "traduccion": "¿Yo juego?",
+                                        "auxiliar": "do"
+                                    }
+                                },
+                                "presente_continuo": {
+                                    "positivo": {
+                                        "conjugacion": "I am playing",
+                                        "traduccion": "yo estoy jugando",
+                                        "auxiliar": "am"
+                                    },
+                                    "negativo": {
+                                        "conjugacion": "I am not playing",
+                                        "traduccion": "yo no estoy jugando",
+                                        "auxiliar": "am not"
+                                    },
+                                    "interrogativo": {
+                                    "conjugacion": "Am I playing?",
+                                    "traduccion": "¿Yo estoy jugando?",
+                                    "auxiliar": "am"
+                                    }
+                                },
+                                "presente_perfecto": {
+                                    "positivo": {
+                                        "conjugacion": "I have played",
+                                        "traduccion": "yo he jugado",
+                                        "auxiliar": "have"
+                                    },
+                                    "negativo": {
+                                        "conjugacion": "I have not played",
+                                        "traduccion": "yo no he jugado",
+                                        "auxiliar": "have not - haven't"
+                                    },
+                                    "interrogativo": {
+                                        "conjugacion": "Have I played?",
+                                        "traduccion": "¿Yo he jugado?",
+                                        "auxiliar": "have"
+                                    }
+                                },
+                                "presente_perfecto_continuo": {
+                                    "positivo": {
+                                        "conjugacion": "I have been playing",
+                                        "traduccion": "yo he estado jugando",
+                                        "auxiliar": "have been"
+                                    },
+                                    "negativo": {
+                                        "conjugacion": "I have not been playing",
+                                        "traduccion": "yo no he estado jugando",
+                                        "auxiliar": "have not been - haven't been"
+                                    },
+                                    "interrogativo": {  
+                                        "conjugacion": "Have I been playing?",
+                                        "traduccion": "¿Yo he estado jugando?",
+                                        "auxiliar": "have"
+                                    }
+                                }
+                                }
+                            }  
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "verbo": "work",
+            "traduccion": "trabajar",
+            "conjugar_pronombre": [
+                {
+                    "pronombre": "I",
+                    "traduccion": "yo",
+                    "conjugar_tiempos": {
+                        "tiempo_presente": {
+                            "presente_simple": {
+                                "positivo": {
+                                    "conjugacion": "I work",
+                                    "traduccion": "yo trabajo",
+                                    "auxiliar": "---"
+                                },
+                                "negativo": {
+                                    "conjugacion": "I don't work",
+                                    "traduccion": "yo no trabajo",
+                                    "auxiliar": "don't - do not"
+                                },
+                                "interrogativo": {
+                                    "conjugacion": "Do I work?",
+                                    "traduccion": "¿Yo trabajo?",
+                                    "auxiliar": "do"
+                                }
+                            },
+                            "presente_continuo": {
+                                "positivo": {
+                                    "conjugacion": "I am working",
+                                    "traduccion": "yo estoy trabajando",
+                                    "auxiliar": "am"
+                                },
+                                "negativo": {
+                                    "conjugacion": "I am not working",
+                                    "traduccion": "yo no estoy trabajando",
+                                    "auxiliar": "am not"
+                                },
+                                "interrogativo": {
+                                    "conjugacion": "Am I working?",
+                                    "traduccion": "¿Yo estoy trabajando?",
+                                    "auxiliar": "am"
+                                }
+                            },
+                            "presente_perfecto": {
+                                "positivo": {
+                                    "conjugacion": "I have worked",
+                                    "traduccion": "yo he trabajado",
+                                    "auxiliar": "have"
+                                },
+                                "negativo": {
+                                    "conjugacion": "I have not worked",
+                                    "traduccion": "yo no he trabajado",
+                                    "auxiliar": "have not - haven't"
+                                },
+                                "interrogativo": {
+                                    "conjugacion": "Have I worked?",
+                                    "traduccion": "¿Yo he trabajado?",
+                                    "auxiliar": "have"
+                                }
+                            },
+                            "presente_perfecto_continuo": {
+                                "positivo": {
+                                    "conjugacion": "I have been working",
+                                    "traduccion": "yo he estado trabajando",
+                                    "auxiliar": "have been"
+                                },
+                                "negativo": {
+                                    "conjugacion": "I have not been working",
+                                    "traduccion": "yo no he estado trabajando",
+                                    "auxiliar": "have not been - haven't been"
+                                },
+                                "interrogativo": {
+                                    "conjugacion": "Have I been working?",
+                                    "traduccion": "¿Yo he estado trabajando?",
+                                    "auxiliar": "have"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "verbo": "study",
+            "traduccion": "estudiar",
+            "conjugar_pronombre": [
+                {
+                    "pronombre": "I",
+                    "traduccion": "yo",
+                    "conjugar_tiempos": {
+                        "tiempo_presente": {
+                            "presente_simple": {
+                                "positivo": {
+                                    "conjugacion": "I study",
+                                    "traduccion": "yo estudio",
+                                    "auxiliar": "---"
+                                },
+                                "negativo": {
+                                    "conjugacion": "I don't study",
+                                    "traduccion": "yo no estudio",
+                                    "auxiliar": "don't - do not"
+                                },
+                                "interrogativo": {
+                                    "conjugacion": "Do I study?",
+                                    "traduccion": "¿Yo estudio?",
+                                    "auxiliar": "do"
+                                }
+                            },
+                            "presente_continuo": {
+                                "positivo": {
+                                    "conjugacion": "I am studying",
+                                    "traduccion": "yo estoy estudiando",
+                                    "auxiliar": "am"
+                                },
+                                "negativo": {
+                                    "conjugacion": "I am not studying",
+                                    "traduccion": "yo no estoy estudiando",
+                                    "auxiliar": "am not"
+                                },
+                                "interrogativo": {
+                                    "conjugacion": "Am I studying?",
+                                    "traduccion": "¿Yo estoy estudiando?",
+                                    "auxiliar": "am"
+                                }
+                            },
+                            "presente_perfecto": {
+                                "positivo": {
+                                    "conjugacion": "I have studied",
+                                    "traduccion": "yo he estudiado",
+                                    "auxiliar": "have"
+                                },
+                                "negativo": {
+                                    "conjugacion": "I have not studied",
+                                    "traduccion": "yo no he estudiado",
+                                    "auxiliar": "have not - haven't"
+                                },
+                                "interrogativo": {
+                                    "conjugacion": "Have I studied?",
+                                    "traduccion": "¿Yo he estudiado?",
+                                    "auxiliar": "have"
+                                }
+                            },
+                            "presente_perfecto_continuo": {
+                                "positivo": {
+                                    "conjugacion": "I have been studying",
+                                    "traduccion": "yo he estado estudiando",
+                                    "auxiliar": "have been"
+                                },
+                                "negativo": {
+                                    "conjugacion": "I have not been studying",
+                                    "traduccion": "yo no he estado estudiando",
+                                    "auxiliar": "have not been - haven't been"
+                                },
+                                "interrogativo": {
+                                    "conjugacion": "Have I been studying?",
+                                    "traduccion": "¿Yo he estado estudiando?",
+                                    "auxiliar": "have"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
