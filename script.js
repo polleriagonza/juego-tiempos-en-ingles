@@ -1,9 +1,72 @@
 class JuegoTiemposVerbos {
     constructor() {
         // La base de datos de verbos se genera a partir de una tabla compacta de
-        // formas (ver construirVerbos / datosVerbos). El patrón de conjugación para
-        // el pronombre "I" es totalmente regular en inglés, así que cada verbo solo
-        // necesita sus 4 formas inglesas y 5 formas españolas (para "yo").
+        // formas (ver construirVerbos / datosVerbos): 4 formas inglesas (base/ing/
+        // pasado/participio) + 5 formas españolas por tiempo (yo/tú/él/nosotros/
+        // ellos). construirVerbos() expande eso a los 7 pronombres ingleses (I,
+        // you, he, she, it, we, they) aplicando reglas gramaticales genéricas
+        // (perfilesPronombre + paradigmasAux/paradigmaSer), no listas por verbo.
+        this.paradigmasAux = {
+            estarPresente: ['estoy', 'estás', 'está', 'estamos', 'están'],
+            estarPasado: ['estaba', 'estabas', 'estaba', 'estábamos', 'estaban'],
+            estarFuturo: ['estaré', 'estarás', 'estará', 'estaremos', 'estarán'],
+            haberPresente: ['he', 'has', 'ha', 'hemos', 'han'],
+            haberPasado: ['había', 'habías', 'había', 'habíamos', 'habían'],
+            haberFuturo: ['habré', 'habrás', 'habrá', 'habremos', 'habrán'],
+            irPresente: ['voy', 'vas', 'va', 'vamos', 'van']
+        };
+        this.paradigmaSer = {
+            presente: ['soy', 'eres', 'es', 'somos', 'son'],
+            pasado: ['fui', 'fuiste', 'fue', 'fuimos', 'fueron'],
+            futuro: ['seré', 'serás', 'será', 'seremos', 'serán']
+        };
+
+        // Perfil gramatical de cada pronombre: qué auxiliar de "be"/"do"/"have"
+        // usa, y qué índice (0=yo,1=tú,2=él,3=nosotros,4=ellos) le corresponde en
+        // las formas españolas por persona (he/she/it comparten índice porque en
+        // español comparten la misma conjugación de 3ª persona singular).
+        // `en` es la forma capitalizada (inicio de oración, positivo/negativo);
+        // `enBajo` es la forma en minúscula para cuando el pronombre queda en
+        // medio de la oración (preguntas: "Are you...?", "Is he...?"). "I" es
+        // siempre mayúscula en cualquier posición.
+        this.perfilesPronombre = [
+            { en: 'I', enBajo: 'I', es: 'yo', idx: 0, tercera: false,
+              ser: 'am', serNeg: 'am not', serNegHint: 'am not', serInterrog: 'Am',
+              pasadoSer: 'was', pasadoSerNeg: "wasn't", pasadoSerNegHint: "wasn't - was not", pasadoSerInterrog: 'Was',
+              auxPresente: 'do', auxPresenteNeg: "don't", auxPresenteInterrog: 'Do',
+              auxPerfecto: 'have', auxPerfectoNeg: "haven't" },
+            { en: 'You', enBajo: 'you', es: 'tú', idx: 1, tercera: false,
+              ser: 'are', serNeg: "aren't", serNegHint: "aren't - are not", serInterrog: 'Are',
+              pasadoSer: 'were', pasadoSerNeg: "weren't", pasadoSerNegHint: "weren't - were not", pasadoSerInterrog: 'Were',
+              auxPresente: 'do', auxPresenteNeg: "don't", auxPresenteInterrog: 'Do',
+              auxPerfecto: 'have', auxPerfectoNeg: "haven't" },
+            { en: 'He', enBajo: 'he', es: 'él', idx: 2, tercera: true,
+              ser: 'is', serNeg: "isn't", serNegHint: "isn't - is not", serInterrog: 'Is',
+              pasadoSer: 'was', pasadoSerNeg: "wasn't", pasadoSerNegHint: "wasn't - was not", pasadoSerInterrog: 'Was',
+              auxPresente: 'does', auxPresenteNeg: "doesn't", auxPresenteInterrog: 'Does',
+              auxPerfecto: 'has', auxPerfectoNeg: "hasn't" },
+            { en: 'She', enBajo: 'she', es: 'ella', idx: 2, tercera: true,
+              ser: 'is', serNeg: "isn't", serNegHint: "isn't - is not", serInterrog: 'Is',
+              pasadoSer: 'was', pasadoSerNeg: "wasn't", pasadoSerNegHint: "wasn't - was not", pasadoSerInterrog: 'Was',
+              auxPresente: 'does', auxPresenteNeg: "doesn't", auxPresenteInterrog: 'Does',
+              auxPerfecto: 'has', auxPerfectoNeg: "hasn't" },
+            { en: 'It', enBajo: 'it', es: 'eso', idx: 2, tercera: true,
+              ser: 'is', serNeg: "isn't", serNegHint: "isn't - is not", serInterrog: 'Is',
+              pasadoSer: 'was', pasadoSerNeg: "wasn't", pasadoSerNegHint: "wasn't - was not", pasadoSerInterrog: 'Was',
+              auxPresente: 'does', auxPresenteNeg: "doesn't", auxPresenteInterrog: 'Does',
+              auxPerfecto: 'has', auxPerfectoNeg: "hasn't" },
+            { en: 'We', enBajo: 'we', es: 'nosotros', idx: 3, tercera: false,
+              ser: 'are', serNeg: "aren't", serNegHint: "aren't - are not", serInterrog: 'Are',
+              pasadoSer: 'were', pasadoSerNeg: "weren't", pasadoSerNegHint: "weren't - were not", pasadoSerInterrog: 'Were',
+              auxPresente: 'do', auxPresenteNeg: "don't", auxPresenteInterrog: 'Do',
+              auxPerfecto: 'have', auxPerfectoNeg: "haven't" },
+            { en: 'They', enBajo: 'they', es: 'ellos', idx: 4, tercera: false,
+              ser: 'are', serNeg: "aren't", serNegHint: "aren't - are not", serInterrog: 'Are',
+              pasadoSer: 'were', pasadoSerNeg: "weren't", pasadoSerNegHint: "weren't - were not", pasadoSerInterrog: 'Were',
+              auxPresente: 'do', auxPresenteNeg: "don't", auxPresenteInterrog: 'Do',
+              auxPerfecto: 'have', auxPerfectoNeg: "haven't" }
+        ];
+
         this.verbos = this.construirVerbos();
         this.poolCompleto = this.construirPoolCompleto();
         this.totalPool = this.poolCompleto.length;
@@ -200,41 +263,168 @@ class JuegoTiemposVerbos {
     // Tabla compacta de verbos. Por cada verbo:
     //   base / ing / past / part  -> formas en inglés
     //   trad                      -> traducción mostrada como "infinitivo"
-    //   pres / pret / fut         -> conjugación de "yo" (presente, pretérito, futuro)
-    //   ger / partES              -> gerundio y participio en español
+    //   pres / pret / fut         -> conjugación española por persona, en el
+    //                                orden [yo, tú, él, nosotros, ellos] (él
+    //                                cubre también ella/it, que comparten la
+    //                                misma 3ª persona singular en español)
+    //   ger / partES              -> gerundio y participio en español (no varían por persona)
     datosVerbos() {
         return [
-            { base: 'have', ing: 'having', past: 'had', part: 'had', trad: 'tener', pres: 'tengo', pret: 'tuve', fut: 'tendré', ger: 'teniendo', partES: 'tenido' },
-            { base: 'do', ing: 'doing', past: 'did', part: 'done', trad: 'hacer', pres: 'hago', pret: 'hice', fut: 'haré', ger: 'haciendo', partES: 'hecho' },
-            { base: 'say', ing: 'saying', past: 'said', part: 'said', trad: 'decir', pres: 'digo', pret: 'dije', fut: 'diré', ger: 'diciendo', partES: 'dicho' },
-            { base: 'go', ing: 'going', past: 'went', part: 'gone', trad: 'ir', pres: 'voy', pret: 'fui', fut: 'iré', ger: 'yendo', partES: 'ido' },
-            { base: 'get', ing: 'getting', past: 'got', part: 'gotten', trad: 'conseguir', pres: 'consigo', pret: 'conseguí', fut: 'conseguiré', ger: 'consiguiendo', partES: 'conseguido' },
-            { base: 'make', ing: 'making', past: 'made', part: 'made', trad: 'hacer (fabricar)', inf: 'hacer', pres: 'hago', pret: 'hice', fut: 'haré', ger: 'haciendo', partES: 'hecho' },
-            { base: 'take', ing: 'taking', past: 'took', part: 'taken', trad: 'tomar', pres: 'tomo', pret: 'tomé', fut: 'tomaré', ger: 'tomando', partES: 'tomado' },
-            { base: 'see', ing: 'seeing', past: 'saw', part: 'seen', trad: 'ver', pres: 'veo', pret: 'vi', fut: 'veré', ger: 'viendo', partES: 'visto' },
-            { base: 'come', ing: 'coming', past: 'came', part: 'come', trad: 'venir', pres: 'vengo', pret: 'vine', fut: 'vendré', ger: 'viniendo', partES: 'venido' },
-            { base: 'want', ing: 'wanting', past: 'wanted', part: 'wanted', trad: 'querer', pres: 'quiero', pret: 'quise', fut: 'querré', ger: 'queriendo', partES: 'querido' },
-            { base: 'give', ing: 'giving', past: 'gave', part: 'given', trad: 'dar', pres: 'doy', pret: 'di', fut: 'daré', ger: 'dando', partES: 'dado' },
-            { base: 'put', ing: 'putting', past: 'put', part: 'put', trad: 'poner', pres: 'pongo', pret: 'puse', fut: 'pondré', ger: 'poniendo', partES: 'puesto' },
-            { base: 'keep', ing: 'keeping', past: 'kept', part: 'kept', trad: 'mantener', pres: 'mantengo', pret: 'mantuve', fut: 'mantendré', ger: 'manteniendo', partES: 'mantenido' },
-            { base: 'let', ing: 'letting', past: 'let', part: 'let', trad: 'dejar', pres: 'dejo', pret: 'dejé', fut: 'dejaré', ger: 'dejando', partES: 'dejado' },
-            { base: 'seem', ing: 'seeming', past: 'seemed', part: 'seemed', trad: 'parecer', pres: 'parezco', pret: 'parecí', fut: 'pareceré', ger: 'pareciendo', partES: 'parecido' },
-            { base: 'send', ing: 'sending', past: 'sent', part: 'sent', trad: 'enviar', pres: 'envío', pret: 'envié', fut: 'enviaré', ger: 'enviando', partES: 'enviado' },
-            { base: 'think', ing: 'thinking', past: 'thought', part: 'thought', trad: 'pensar', pres: 'pienso', pret: 'pensé', fut: 'pensaré', ger: 'pensando', partES: 'pensado' },
-            { base: 'know', ing: 'knowing', past: 'knew', part: 'known', trad: 'saber', pres: 'sé', pret: 'supe', fut: 'sabré', ger: 'sabiendo', partES: 'sabido' },
-            { base: 'look', ing: 'looking', past: 'looked', part: 'looked', trad: 'mirar', pres: 'miro', pret: 'miré', fut: 'miraré', ger: 'mirando', partES: 'mirado' },
-            { base: 'use', ing: 'using', past: 'used', part: 'used', trad: 'usar', pres: 'uso', pret: 'usé', fut: 'usaré', ger: 'usando', partES: 'usado' },
-            { base: 'find', ing: 'finding', past: 'found', part: 'found', trad: 'encontrar', pres: 'encuentro', pret: 'encontré', fut: 'encontraré', ger: 'encontrando', partES: 'encontrado' },
-            { base: 'tell', ing: 'telling', past: 'told', part: 'told', trad: 'contar', pres: 'cuento', pret: 'conté', fut: 'contaré', ger: 'contando', partES: 'contado' },
-            { base: 'work', ing: 'working', past: 'worked', part: 'worked', trad: 'trabajar', pres: 'trabajo', pret: 'trabajé', fut: 'trabajaré', ger: 'trabajando', partES: 'trabajado' },
-            { base: 'call', ing: 'calling', past: 'called', part: 'called', trad: 'llamar', pres: 'llamo', pret: 'llamé', fut: 'llamaré', ger: 'llamando', partES: 'llamado' },
-            { base: 'try', ing: 'trying', past: 'tried', part: 'tried', trad: 'intentar', pres: 'intento', pret: 'intenté', fut: 'intentaré', ger: 'intentando', partES: 'intentado' },
-            { base: 'ask', ing: 'asking', past: 'asked', part: 'asked', trad: 'preguntar', pres: 'pregunto', pret: 'pregunté', fut: 'preguntaré', ger: 'preguntando', partES: 'preguntado' },
-            { base: 'need', ing: 'needing', past: 'needed', part: 'needed', trad: 'necesitar', pres: 'necesito', pret: 'necesité', fut: 'necesitaré', ger: 'necesitando', partES: 'necesitado' },
-            { base: 'feel', ing: 'feeling', past: 'felt', part: 'felt', trad: 'sentir', pres: 'siento', pret: 'sentí', fut: 'sentiré', ger: 'sintiendo', partES: 'sentido' },
-            { base: 'play', ing: 'playing', past: 'played', part: 'played', trad: 'jugar', pres: 'juego', pret: 'jugué', fut: 'jugaré', ger: 'jugando', partES: 'jugado' },
-            { base: 'stop', ing: 'stopping', past: 'stopped', part: 'stopped', trad: 'parar', pres: 'paro', pret: 'paré', fut: 'pararé', ger: 'parando', partES: 'parado' },
-            { base: 'plan', ing: 'planning', past: 'planned', part: 'planned', trad: 'planear', pres: 'planeo', pret: 'planeé', fut: 'planearé', ger: 'planeando', partES: 'planeado' }
+            { base: 'have', ing: 'having', past: 'had', part: 'had', trad: 'tener',
+              pres: ['tengo', 'tienes', 'tiene', 'tenemos', 'tienen'],
+              pret: ['tuve', 'tuviste', 'tuvo', 'tuvimos', 'tuvieron'],
+              fut: ['tendré', 'tendrás', 'tendrá', 'tendremos', 'tendrán'],
+              ger: 'teniendo', partES: 'tenido' },
+            { base: 'do', ing: 'doing', past: 'did', part: 'done', trad: 'hacer',
+              pres: ['hago', 'haces', 'hace', 'hacemos', 'hacen'],
+              pret: ['hice', 'hiciste', 'hizo', 'hicimos', 'hicieron'],
+              fut: ['haré', 'harás', 'hará', 'haremos', 'harán'],
+              ger: 'haciendo', partES: 'hecho' },
+            { base: 'say', ing: 'saying', past: 'said', part: 'said', trad: 'decir',
+              pres: ['digo', 'dices', 'dice', 'decimos', 'dicen'],
+              pret: ['dije', 'dijiste', 'dijo', 'dijimos', 'dijeron'],
+              fut: ['diré', 'dirás', 'dirá', 'diremos', 'dirán'],
+              ger: 'diciendo', partES: 'dicho' },
+            { base: 'go', ing: 'going', past: 'went', part: 'gone', trad: 'ir',
+              pres: ['voy', 'vas', 'va', 'vamos', 'van'],
+              pret: ['fui', 'fuiste', 'fue', 'fuimos', 'fueron'],
+              fut: ['iré', 'irás', 'irá', 'iremos', 'irán'],
+              ger: 'yendo', partES: 'ido' },
+            { base: 'get', ing: 'getting', past: 'got', part: 'gotten', trad: 'conseguir',
+              pres: ['consigo', 'consigues', 'consigue', 'conseguimos', 'consiguen'],
+              pret: ['conseguí', 'conseguiste', 'consiguió', 'conseguimos', 'consiguieron'],
+              fut: ['conseguiré', 'conseguirás', 'conseguirá', 'conseguiremos', 'conseguirán'],
+              ger: 'consiguiendo', partES: 'conseguido' },
+            { base: 'make', ing: 'making', past: 'made', part: 'made', trad: 'hacer (fabricar)', inf: 'hacer',
+              pres: ['hago', 'haces', 'hace', 'hacemos', 'hacen'],
+              pret: ['hice', 'hiciste', 'hizo', 'hicimos', 'hicieron'],
+              fut: ['haré', 'harás', 'hará', 'haremos', 'harán'],
+              ger: 'haciendo', partES: 'hecho' },
+            { base: 'take', ing: 'taking', past: 'took', part: 'taken', trad: 'tomar',
+              pres: ['tomo', 'tomas', 'toma', 'tomamos', 'toman'],
+              pret: ['tomé', 'tomaste', 'tomó', 'tomamos', 'tomaron'],
+              fut: ['tomaré', 'tomarás', 'tomará', 'tomaremos', 'tomarán'],
+              ger: 'tomando', partES: 'tomado' },
+            { base: 'see', ing: 'seeing', past: 'saw', part: 'seen', trad: 'ver',
+              pres: ['veo', 'ves', 've', 'vemos', 'ven'],
+              pret: ['vi', 'viste', 'vio', 'vimos', 'vieron'],
+              fut: ['veré', 'verás', 'verá', 'veremos', 'verán'],
+              ger: 'viendo', partES: 'visto' },
+            { base: 'come', ing: 'coming', past: 'came', part: 'come', trad: 'venir',
+              pres: ['vengo', 'vienes', 'viene', 'venimos', 'vienen'],
+              pret: ['vine', 'viniste', 'vino', 'vinimos', 'vinieron'],
+              fut: ['vendré', 'vendrás', 'vendrá', 'vendremos', 'vendrán'],
+              ger: 'viniendo', partES: 'venido' },
+            { base: 'want', ing: 'wanting', past: 'wanted', part: 'wanted', trad: 'querer',
+              pres: ['quiero', 'quieres', 'quiere', 'queremos', 'quieren'],
+              pret: ['quise', 'quisiste', 'quiso', 'quisimos', 'quisieron'],
+              fut: ['querré', 'querrás', 'querrá', 'querremos', 'querrán'],
+              ger: 'queriendo', partES: 'querido' },
+            { base: 'give', ing: 'giving', past: 'gave', part: 'given', trad: 'dar',
+              pres: ['doy', 'das', 'da', 'damos', 'dan'],
+              pret: ['di', 'diste', 'dio', 'dimos', 'dieron'],
+              fut: ['daré', 'darás', 'dará', 'daremos', 'darán'],
+              ger: 'dando', partES: 'dado' },
+            { base: 'put', ing: 'putting', past: 'put', part: 'put', trad: 'poner',
+              pres: ['pongo', 'pones', 'pone', 'ponemos', 'ponen'],
+              pret: ['puse', 'pusiste', 'puso', 'pusimos', 'pusieron'],
+              fut: ['pondré', 'pondrás', 'pondrá', 'pondremos', 'pondrán'],
+              ger: 'poniendo', partES: 'puesto' },
+            { base: 'keep', ing: 'keeping', past: 'kept', part: 'kept', trad: 'mantener',
+              pres: ['mantengo', 'mantienes', 'mantiene', 'mantenemos', 'mantienen'],
+              pret: ['mantuve', 'mantuviste', 'mantuvo', 'mantuvimos', 'mantuvieron'],
+              fut: ['mantendré', 'mantendrás', 'mantendrá', 'mantendremos', 'mantendrán'],
+              ger: 'manteniendo', partES: 'mantenido' },
+            { base: 'let', ing: 'letting', past: 'let', part: 'let', trad: 'dejar',
+              pres: ['dejo', 'dejas', 'deja', 'dejamos', 'dejan'],
+              pret: ['dejé', 'dejaste', 'dejó', 'dejamos', 'dejaron'],
+              fut: ['dejaré', 'dejarás', 'dejará', 'dejaremos', 'dejarán'],
+              ger: 'dejando', partES: 'dejado' },
+            { base: 'seem', ing: 'seeming', past: 'seemed', part: 'seemed', trad: 'parecer',
+              pres: ['parezco', 'pareces', 'parece', 'parecemos', 'parecen'],
+              pret: ['parecí', 'pareciste', 'pareció', 'parecimos', 'parecieron'],
+              fut: ['pareceré', 'parecerás', 'parecerá', 'pareceremos', 'parecerán'],
+              ger: 'pareciendo', partES: 'parecido' },
+            { base: 'send', ing: 'sending', past: 'sent', part: 'sent', trad: 'enviar',
+              pres: ['envío', 'envías', 'envía', 'enviamos', 'envían'],
+              pret: ['envié', 'enviaste', 'envió', 'enviamos', 'enviaron'],
+              fut: ['enviaré', 'enviarás', 'enviará', 'enviaremos', 'enviarán'],
+              ger: 'enviando', partES: 'enviado' },
+            { base: 'think', ing: 'thinking', past: 'thought', part: 'thought', trad: 'pensar',
+              pres: ['pienso', 'piensas', 'piensa', 'pensamos', 'piensan'],
+              pret: ['pensé', 'pensaste', 'pensó', 'pensamos', 'pensaron'],
+              fut: ['pensaré', 'pensarás', 'pensará', 'pensaremos', 'pensarán'],
+              ger: 'pensando', partES: 'pensado' },
+            { base: 'know', ing: 'knowing', past: 'knew', part: 'known', trad: 'saber',
+              pres: ['sé', 'sabes', 'sabe', 'sabemos', 'saben'],
+              pret: ['supe', 'supiste', 'supo', 'supimos', 'supieron'],
+              fut: ['sabré', 'sabrás', 'sabrá', 'sabremos', 'sabrán'],
+              ger: 'sabiendo', partES: 'sabido' },
+            { base: 'look', ing: 'looking', past: 'looked', part: 'looked', trad: 'mirar',
+              pres: ['miro', 'miras', 'mira', 'miramos', 'miran'],
+              pret: ['miré', 'miraste', 'miró', 'miramos', 'miraron'],
+              fut: ['miraré', 'mirarás', 'mirará', 'miraremos', 'mirarán'],
+              ger: 'mirando', partES: 'mirado' },
+            { base: 'use', ing: 'using', past: 'used', part: 'used', trad: 'usar',
+              pres: ['uso', 'usas', 'usa', 'usamos', 'usan'],
+              pret: ['usé', 'usaste', 'usó', 'usamos', 'usaron'],
+              fut: ['usaré', 'usarás', 'usará', 'usaremos', 'usarán'],
+              ger: 'usando', partES: 'usado' },
+            { base: 'find', ing: 'finding', past: 'found', part: 'found', trad: 'encontrar',
+              pres: ['encuentro', 'encuentras', 'encuentra', 'encontramos', 'encuentran'],
+              pret: ['encontré', 'encontraste', 'encontró', 'encontramos', 'encontraron'],
+              fut: ['encontraré', 'encontrarás', 'encontrará', 'encontraremos', 'encontrarán'],
+              ger: 'encontrando', partES: 'encontrado' },
+            { base: 'tell', ing: 'telling', past: 'told', part: 'told', trad: 'contar',
+              pres: ['cuento', 'cuentas', 'cuenta', 'contamos', 'cuentan'],
+              pret: ['conté', 'contaste', 'contó', 'contamos', 'contaron'],
+              fut: ['contaré', 'contarás', 'contará', 'contaremos', 'contarán'],
+              ger: 'contando', partES: 'contado' },
+            { base: 'work', ing: 'working', past: 'worked', part: 'worked', trad: 'trabajar',
+              pres: ['trabajo', 'trabajas', 'trabaja', 'trabajamos', 'trabajan'],
+              pret: ['trabajé', 'trabajaste', 'trabajó', 'trabajamos', 'trabajaron'],
+              fut: ['trabajaré', 'trabajarás', 'trabajará', 'trabajaremos', 'trabajarán'],
+              ger: 'trabajando', partES: 'trabajado' },
+            { base: 'call', ing: 'calling', past: 'called', part: 'called', trad: 'llamar',
+              pres: ['llamo', 'llamas', 'llama', 'llamamos', 'llaman'],
+              pret: ['llamé', 'llamaste', 'llamó', 'llamamos', 'llamaron'],
+              fut: ['llamaré', 'llamarás', 'llamará', 'llamaremos', 'llamarán'],
+              ger: 'llamando', partES: 'llamado' },
+            { base: 'try', ing: 'trying', past: 'tried', part: 'tried', trad: 'intentar',
+              pres: ['intento', 'intentas', 'intenta', 'intentamos', 'intentan'],
+              pret: ['intenté', 'intentaste', 'intentó', 'intentamos', 'intentaron'],
+              fut: ['intentaré', 'intentarás', 'intentará', 'intentaremos', 'intentarán'],
+              ger: 'intentando', partES: 'intentado' },
+            { base: 'ask', ing: 'asking', past: 'asked', part: 'asked', trad: 'preguntar',
+              pres: ['pregunto', 'preguntas', 'pregunta', 'preguntamos', 'preguntan'],
+              pret: ['pregunté', 'preguntaste', 'preguntó', 'preguntamos', 'preguntaron'],
+              fut: ['preguntaré', 'preguntarás', 'preguntará', 'preguntaremos', 'preguntarán'],
+              ger: 'preguntando', partES: 'preguntado' },
+            { base: 'need', ing: 'needing', past: 'needed', part: 'needed', trad: 'necesitar',
+              pres: ['necesito', 'necesitas', 'necesita', 'necesitamos', 'necesitan'],
+              pret: ['necesité', 'necesitaste', 'necesitó', 'necesitamos', 'necesitaron'],
+              fut: ['necesitaré', 'necesitarás', 'necesitará', 'necesitaremos', 'necesitarán'],
+              ger: 'necesitando', partES: 'necesitado' },
+            { base: 'feel', ing: 'feeling', past: 'felt', part: 'felt', trad: 'sentir',
+              pres: ['siento', 'sientes', 'siente', 'sentimos', 'sienten'],
+              pret: ['sentí', 'sentiste', 'sintió', 'sentimos', 'sintieron'],
+              fut: ['sentiré', 'sentirás', 'sentirá', 'sentiremos', 'sentirán'],
+              ger: 'sintiendo', partES: 'sentido' },
+            { base: 'play', ing: 'playing', past: 'played', part: 'played', trad: 'jugar',
+              pres: ['juego', 'juegas', 'juega', 'jugamos', 'juegan'],
+              pret: ['jugué', 'jugaste', 'jugó', 'jugamos', 'jugaron'],
+              fut: ['jugaré', 'jugarás', 'jugará', 'jugaremos', 'jugarán'],
+              ger: 'jugando', partES: 'jugado' },
+            { base: 'stop', ing: 'stopping', past: 'stopped', part: 'stopped', trad: 'parar',
+              pres: ['paro', 'paras', 'para', 'paramos', 'paran'],
+              pret: ['paré', 'paraste', 'paró', 'paramos', 'pararon'],
+              fut: ['pararé', 'pararás', 'parará', 'pararemos', 'pararán'],
+              ger: 'parando', partES: 'parado' },
+            { base: 'plan', ing: 'planning', past: 'planned', part: 'planned', trad: 'planear',
+              pres: ['planeo', 'planeas', 'planea', 'planeamos', 'planean'],
+              pret: ['planeé', 'planeaste', 'planeó', 'planeamos', 'planearon'],
+              fut: ['planearé', 'planearás', 'planeará', 'planearemos', 'planearán'],
+              ger: 'planeando', partES: 'planeado' }
         ];
     }
 
@@ -242,17 +432,19 @@ class JuegoTiemposVerbos {
         const verbos = [];
 
         // "be" es el único verbo irregular como cópula (no encaja en la plantilla),
-        // así que se construye aparte.
+        // así que se construye aparte. Se conjuga una vez por cada uno de los 7
+        // pronombres (perfilesPronombre).
         verbos.push({
             id: 1,
             verbo: 'be',
             traduccion: 'ser/estar',
-            formas: { base: 'be', ing: 'being', pasado: 'was', participio: 'been' },
-            conjugar_pronombre: [{
-                pronombre: 'I',
-                traduccion: 'yo',
-                conjugar_tiempos: this.construirBeTiempos()
-            }]
+            formas: { base: 'be', ing: 'being', pasado: 'was', participio: 'been', tercera: 'is' },
+            conjugar_pronombre: this.perfilesPronombre.map(perfil => ({
+                pronombre: perfil.en,
+                traduccion: perfil.es,
+                tercera: perfil.tercera,
+                conjugar_tiempos: this.construirBeTiempos(perfil)
+            }))
         });
 
         this.datosVerbos().forEach((f, i) => {
@@ -260,12 +452,13 @@ class JuegoTiemposVerbos {
                 id: i + 2,
                 verbo: f.base,
                 traduccion: f.trad,
-                formas: { base: f.base, ing: f.ing, pasado: f.past, participio: f.part },
-                conjugar_pronombre: [{
-                    pronombre: 'I',
-                    traduccion: 'yo',
-                    conjugar_tiempos: this.plantillaTiempos(f)
-                }]
+                formas: { base: f.base, ing: f.ing, pasado: f.past, participio: f.part, tercera: this.terceraPersona(f.base) },
+                conjugar_pronombre: this.perfilesPronombre.map(perfil => ({
+                    pronombre: perfil.en,
+                    traduccion: perfil.es,
+                    tercera: perfil.tercera,
+                    conjugar_tiempos: this.plantillaTiempos(f, perfil)
+                }))
             });
         });
 
@@ -277,159 +470,214 @@ class JuegoTiemposVerbos {
         return { conjugacion, traduccion, auxiliar };
     }
 
-    // Genera los 12 tiempos × 3 tipos para un verbo léxico regular (pronombre "I").
-    plantillaTiempos(f) {
+    capitaliza(s) {
+        return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+
+    // Forma de 3ª persona singular del presente simple (he/she/it), derivada de
+    // la base con las reglas ortográficas del inglés (sin listas por verbo, salvo
+    // la única excepción real: have -> has).
+    terceraPersona(base) {
+        if (base === 'have') return 'has';
+        if (/[sxz]$/.test(base) || /[cs]h$/.test(base)) return base + 'es';
+        if (base.endsWith('o')) return base + 'es';
+        const penultima = base[base.length - 2];
+        if (base.endsWith('y') && penultima && !'aeiou'.includes(penultima)) {
+            return base.slice(0, -1) + 'ies';
+        }
+        return base + 's';
+    }
+
+    // Genera los 12 tiempos × 3 tipos para un verbo léxico regular, para un
+    // pronombre dado (perfil = entrada de perfilesPronombre). Los auxiliares en
+    // inglés (am/is/are, do/does, have/has...) y la persona española (idx) salen
+    // del perfil; solo pasado/futuro simple, "had" y "will" son iguales para
+    // todos los pronombres (por eso no dependen del perfil).
+    plantillaTiempos(f, perfil) {
         const ger = f.ger;
         const pES = f.partES;
         const inf = f.inf || f.trad; // infinitivo limpio para "voy a + infinitivo"
+        const en = perfil.en;
+        const enBajo = perfil.enBajo;
+        const es = `${perfil.es} `;
+        const idx = perfil.idx;
+        const P = this.paradigmasAux;
+        const presenteBase = perfil.tercera ? this.terceraPersona(f.base) : f.base;
+
+        // Cuerpos en español (sin sujeto) por tiempo/variación, usando la forma
+        // propia del verbo (pres/pret/fut[idx]) o los paradigmas auxiliares
+        // invariantes (estar/haber/ir), que son iguales para cualquier verbo.
+        const esPresSimple = f.pres[idx];
+        const esPresCont = `${P.estarPresente[idx]} ${ger}`;
+        const esPresPerf = `${P.haberPresente[idx]} ${pES}`;
+        const esPresPerfCont = `${P.haberPresente[idx]} estado ${ger}`;
+        const esPasSimple = f.pret[idx];
+        const esPasCont = `${P.estarPasado[idx]} ${ger}`;
+        const esPasPerf = `${P.haberPasado[idx]} ${pES}`;
+        const esPasPerfCont = `${P.haberPasado[idx]} estado ${ger}`;
+        const esFutSimple = f.fut[idx];
+        const esFutGoingTo = `${P.irPresente[idx]} a ${inf}`;
+        const esFutCont = `${P.estarFuturo[idx]} ${ger}`;
+        const esFutPerf = `${P.haberFuturo[idx]} ${pES}`;
+        const esFutPerfCont = `${P.haberFuturo[idx]} estado ${ger}`;
+
         return {
             tiempo_presente: {
                 presente_simple: {
-                    positivo: this.cel(`I ${f.base}`, `yo ${f.pres}`, '---'),
-                    negativo: this.cel(`I don't ${f.base}`, `yo no ${f.pres}`, "don't - do not"),
-                    interrogativo: this.cel(`Do I ${f.base}?`, `¿Yo ${f.pres}?`, 'do')
+                    positivo: this.cel(`${en} ${presenteBase}`, `${es}${esPresSimple}`, '---'),
+                    negativo: this.cel(`${en} ${perfil.auxPresenteNeg} ${f.base}`, `${es}no ${esPresSimple}`, `${perfil.auxPresenteNeg} - ${perfil.auxPresente} not`),
+                    interrogativo: this.cel(`${perfil.auxPresenteInterrog} ${enBajo} ${f.base}?`, `¿${es}${esPresSimple}?`, perfil.auxPresente)
                 },
                 presente_continuo: {
-                    positivo: this.cel(`I am ${f.ing}`, `yo estoy ${ger}`, 'am'),
-                    negativo: this.cel(`I am not ${f.ing}`, `yo no estoy ${ger}`, 'am not'),
-                    interrogativo: this.cel(`Am I ${f.ing}?`, `¿Yo estoy ${ger}?`, 'am')
+                    positivo: this.cel(`${en} ${perfil.ser} ${f.ing}`, `${es}${esPresCont}`, perfil.ser),
+                    negativo: this.cel(`${en} ${perfil.serNeg} ${f.ing}`, `${es}no ${esPresCont}`, perfil.serNegHint),
+                    interrogativo: this.cel(`${perfil.serInterrog} ${enBajo} ${f.ing}?`, `¿${es}${esPresCont}?`, perfil.ser)
                 },
                 presente_perfecto: {
-                    positivo: this.cel(`I have ${f.part}`, `yo he ${pES}`, 'have'),
-                    negativo: this.cel(`I have not ${f.part}`, `yo no he ${pES}`, "haven't - have not"),
-                    interrogativo: this.cel(`Have I ${f.part}?`, `¿Yo he ${pES}?`, 'have')
+                    positivo: this.cel(`${en} ${perfil.auxPerfecto} ${f.part}`, `${es}${esPresPerf}`, perfil.auxPerfecto),
+                    negativo: this.cel(`${en} ${perfil.auxPerfecto} not ${f.part}`, `${es}no ${esPresPerf}`, `${perfil.auxPerfectoNeg} - ${perfil.auxPerfecto} not`),
+                    interrogativo: this.cel(`${this.capitaliza(perfil.auxPerfecto)} ${enBajo} ${f.part}?`, `¿${es}${esPresPerf}?`, perfil.auxPerfecto)
                 },
                 presente_perfecto_continuo: {
-                    positivo: this.cel(`I have been ${f.ing}`, `yo he estado ${ger}`, 'have been'),
-                    negativo: this.cel(`I have not been ${f.ing}`, `yo no he estado ${ger}`, "haven't been - have not been"),
-                    interrogativo: this.cel(`Have I been ${f.ing}?`, `¿Yo he estado ${ger}?`, 'have')
+                    positivo: this.cel(`${en} ${perfil.auxPerfecto} been ${f.ing}`, `${es}${esPresPerfCont}`, `${perfil.auxPerfecto} been`),
+                    negativo: this.cel(`${en} ${perfil.auxPerfecto} not been ${f.ing}`, `${es}no ${esPresPerfCont}`, `${perfil.auxPerfectoNeg} been - ${perfil.auxPerfecto} not been`),
+                    interrogativo: this.cel(`${this.capitaliza(perfil.auxPerfecto)} ${enBajo} been ${f.ing}?`, `¿${es}${esPresPerfCont}?`, perfil.auxPerfecto)
                 }
             },
             tiempo_pasado: {
                 pasado_simple: {
-                    positivo: this.cel(`I ${f.past}`, `yo ${f.pret}`, '---'),
-                    negativo: this.cel(`I didn't ${f.base}`, `yo no ${f.pret}`, "didn't - did not"),
-                    interrogativo: this.cel(`Did I ${f.base}?`, `¿Yo ${f.pret}?`, 'did')
+                    positivo: this.cel(`${en} ${f.past}`, `${es}${esPasSimple}`, '---'),
+                    negativo: this.cel(`${en} didn't ${f.base}`, `${es}no ${esPasSimple}`, "didn't - did not"),
+                    interrogativo: this.cel(`Did ${enBajo} ${f.base}?`, `¿${es}${esPasSimple}?`, 'did')
                 },
                 pasado_continuo: {
-                    positivo: this.cel(`I was ${f.ing}`, `yo estaba ${ger}`, 'was'),
-                    negativo: this.cel(`I wasn't ${f.ing}`, `yo no estaba ${ger}`, "wasn't - was not"),
-                    interrogativo: this.cel(`Was I ${f.ing}?`, `¿Yo estaba ${ger}?`, 'was')
+                    positivo: this.cel(`${en} ${perfil.pasadoSer} ${f.ing}`, `${es}${esPasCont}`, perfil.pasadoSer),
+                    negativo: this.cel(`${en} ${perfil.pasadoSerNeg} ${f.ing}`, `${es}no ${esPasCont}`, perfil.pasadoSerNegHint),
+                    interrogativo: this.cel(`${perfil.pasadoSerInterrog} ${enBajo} ${f.ing}?`, `¿${es}${esPasCont}?`, perfil.pasadoSer)
                 },
                 pasado_perfecto: {
-                    positivo: this.cel(`I had ${f.part}`, `yo había ${pES}`, 'had'),
-                    negativo: this.cel(`I hadn't ${f.part}`, `yo no había ${pES}`, "hadn't - had not"),
-                    interrogativo: this.cel(`Had I ${f.part}?`, `¿Yo había ${pES}?`, 'had')
+                    positivo: this.cel(`${en} had ${f.part}`, `${es}${esPasPerf}`, 'had'),
+                    negativo: this.cel(`${en} hadn't ${f.part}`, `${es}no ${esPasPerf}`, "hadn't - had not"),
+                    interrogativo: this.cel(`Had ${enBajo} ${f.part}?`, `¿${es}${esPasPerf}?`, 'had')
                 },
                 pasado_perfecto_continuo: {
-                    positivo: this.cel(`I had been ${f.ing}`, `yo había estado ${ger}`, 'had been'),
-                    negativo: this.cel(`I hadn't been ${f.ing}`, `yo no había estado ${ger}`, "hadn't been - had not been"),
-                    interrogativo: this.cel(`Had I been ${f.ing}?`, `¿Yo había estado ${ger}?`, 'had')
+                    positivo: this.cel(`${en} had been ${f.ing}`, `${es}${esPasPerfCont}`, 'had been'),
+                    negativo: this.cel(`${en} hadn't been ${f.ing}`, `${es}no ${esPasPerfCont}`, "hadn't been - had not been"),
+                    interrogativo: this.cel(`Had ${enBajo} been ${f.ing}?`, `¿${es}${esPasPerfCont}?`, 'had')
                 }
             },
             tiempo_futuro: {
                 futuro_simple: {
-                    positivo: this.cel(`I will ${f.base}`, `yo ${f.fut}`, 'will'),
-                    negativo: this.cel(`I won't ${f.base}`, `yo no ${f.fut}`, "won't - will not"),
-                    interrogativo: this.cel(`Will I ${f.base}?`, `¿Yo ${f.fut}?`, 'will')
+                    positivo: this.cel(`${en} will ${f.base}`, `${es}${esFutSimple}`, 'will'),
+                    negativo: this.cel(`${en} won't ${f.base}`, `${es}no ${esFutSimple}`, "won't - will not"),
+                    interrogativo: this.cel(`Will ${enBajo} ${f.base}?`, `¿${es}${esFutSimple}?`, 'will')
                 },
                 futuro_going_to: {
-                    positivo: this.cel(`I am going to ${f.base}`, `yo voy a ${inf}`, 'am going to'),
-                    negativo: this.cel(`I am not going to ${f.base}`, `yo no voy a ${inf}`, 'am not going to'),
-                    interrogativo: this.cel(`Am I going to ${f.base}?`, `¿Yo voy a ${inf}?`, 'am going to')
+                    positivo: this.cel(`${en} ${perfil.ser} going to ${f.base}`, `${es}${esFutGoingTo}`, `${perfil.ser} going to`),
+                    negativo: this.cel(`${en} ${perfil.serNeg} going to ${f.base}`, `${es}no ${esFutGoingTo}`, `${perfil.serNeg} going to`),
+                    interrogativo: this.cel(`${perfil.serInterrog} ${enBajo} going to ${f.base}?`, `¿${es}${esFutGoingTo}?`, `${perfil.ser} going to`)
                 },
                 futuro_continuo: {
-                    positivo: this.cel(`I will be ${f.ing}`, `yo estaré ${ger}`, 'will be'),
-                    negativo: this.cel(`I won't be ${f.ing}`, `yo no estaré ${ger}`, "won't be - will not be"),
-                    interrogativo: this.cel(`Will I be ${f.ing}?`, `¿Yo estaré ${ger}?`, 'will')
+                    positivo: this.cel(`${en} will be ${f.ing}`, `${es}${esFutCont}`, 'will be'),
+                    negativo: this.cel(`${en} won't be ${f.ing}`, `${es}no ${esFutCont}`, "won't be - will not be"),
+                    interrogativo: this.cel(`Will ${enBajo} be ${f.ing}?`, `¿${es}${esFutCont}?`, 'will')
                 },
                 futuro_perfecto: {
-                    positivo: this.cel(`I will have ${f.part}`, `yo habré ${pES}`, 'will have'),
-                    negativo: this.cel(`I won't have ${f.part}`, `yo no habré ${pES}`, "won't have - will not have"),
-                    interrogativo: this.cel(`Will I have ${f.part}?`, `¿Yo habré ${pES}?`, 'will')
+                    positivo: this.cel(`${en} will have ${f.part}`, `${es}${esFutPerf}`, 'will have'),
+                    negativo: this.cel(`${en} won't have ${f.part}`, `${es}no ${esFutPerf}`, "won't have - will not have"),
+                    interrogativo: this.cel(`Will ${enBajo} have ${f.part}?`, `¿${es}${esFutPerf}?`, 'will')
                 },
                 futuro_perfecto_continuo: {
-                    positivo: this.cel(`I will have been ${f.ing}`, `yo habré estado ${ger}`, 'will have been'),
-                    negativo: this.cel(`I won't have been ${f.ing}`, `yo no habré estado ${ger}`, "won't have been - will not have been"),
-                    interrogativo: this.cel(`Will I have been ${f.ing}?`, `¿Yo habré estado ${ger}?`, 'will')
+                    positivo: this.cel(`${en} will have been ${f.ing}`, `${es}${esFutPerfCont}`, 'will have been'),
+                    negativo: this.cel(`${en} won't have been ${f.ing}`, `${es}no ${esFutPerfCont}`, "won't have been - will not have been"),
+                    interrogativo: this.cel(`Will ${enBajo} have been ${f.ing}?`, `¿${es}${esFutPerfCont}?`, 'will')
                 }
             }
         };
     }
 
-    // "be" como cópula: el simple usa am/was/will be sin verbo léxico, el continuo
-    // usa "being", el perfecto "been" y el perfecto continuo "been being".
-    construirBeTiempos() {
+    // "be" como cópula: el simple usa am/is/are (sin verbo léxico), el continuo
+    // usa "being", el perfecto "been" y el perfecto continuo "been being". Se
+    // conjuga por pronombre igual que plantillaTiempos, con el paradigma español
+    // de "ser" (paradigmaSer) en vez del pres/pret/fut de un verbo léxico.
+    construirBeTiempos(perfil) {
+        const en = perfil.en;
+        const enBajo = perfil.enBajo;
+        const es = `${perfil.es} `;
+        const idx = perfil.idx;
+        const P = this.paradigmasAux;
+        const S = this.paradigmaSer;
+
         return {
             tiempo_presente: {
                 presente_simple: {
-                    positivo: this.cel('I am', 'yo soy', 'am'),
-                    negativo: this.cel('I am not', 'yo no soy', 'am not'),
-                    interrogativo: this.cel('Am I?', '¿Yo soy?', 'am')
+                    positivo: this.cel(`${en} ${perfil.ser}`, `${es}${S.presente[idx]}`, perfil.ser),
+                    negativo: this.cel(`${en} ${perfil.serNeg}`, `${es}no ${S.presente[idx]}`, perfil.serNegHint),
+                    interrogativo: this.cel(`${perfil.serInterrog} ${enBajo}?`, `¿${es}${S.presente[idx]}?`, perfil.ser)
                 },
                 presente_continuo: {
-                    positivo: this.cel('I am being', 'yo estoy siendo', 'am'),
-                    negativo: this.cel('I am not being', 'yo no estoy siendo', 'am not'),
-                    interrogativo: this.cel('Am I being?', '¿Yo estoy siendo?', 'am')
+                    positivo: this.cel(`${en} ${perfil.ser} being`, `${es}${P.estarPresente[idx]} siendo`, perfil.ser),
+                    negativo: this.cel(`${en} ${perfil.serNeg} being`, `${es}no ${P.estarPresente[idx]} siendo`, perfil.serNegHint),
+                    interrogativo: this.cel(`${perfil.serInterrog} ${enBajo} being?`, `¿${es}${P.estarPresente[idx]} siendo?`, perfil.ser)
                 },
                 presente_perfecto: {
-                    positivo: this.cel('I have been', 'yo he sido', 'have'),
-                    negativo: this.cel('I have not been', 'yo no he sido', "haven't - have not"),
-                    interrogativo: this.cel('Have I been?', '¿Yo he sido?', 'have')
+                    positivo: this.cel(`${en} ${perfil.auxPerfecto} been`, `${es}${P.haberPresente[idx]} sido`, perfil.auxPerfecto),
+                    negativo: this.cel(`${en} ${perfil.auxPerfecto} not been`, `${es}no ${P.haberPresente[idx]} sido`, `${perfil.auxPerfectoNeg} - ${perfil.auxPerfecto} not`),
+                    interrogativo: this.cel(`${this.capitaliza(perfil.auxPerfecto)} ${enBajo} been?`, `¿${es}${P.haberPresente[idx]} sido?`, perfil.auxPerfecto)
                 },
                 presente_perfecto_continuo: {
-                    positivo: this.cel('I have been being', 'yo he estado siendo', 'have been'),
-                    negativo: this.cel('I have not been being', 'yo no he estado siendo', "haven't been - have not been"),
-                    interrogativo: this.cel('Have I been being?', '¿Yo he estado siendo?', 'have')
+                    positivo: this.cel(`${en} ${perfil.auxPerfecto} been being`, `${es}${P.haberPresente[idx]} estado siendo`, `${perfil.auxPerfecto} been`),
+                    negativo: this.cel(`${en} ${perfil.auxPerfecto} not been being`, `${es}no ${P.haberPresente[idx]} estado siendo`, `${perfil.auxPerfectoNeg} been - ${perfil.auxPerfecto} not been`),
+                    interrogativo: this.cel(`${this.capitaliza(perfil.auxPerfecto)} ${enBajo} been being?`, `¿${es}${P.haberPresente[idx]} estado siendo?`, perfil.auxPerfecto)
                 }
             },
             tiempo_pasado: {
                 pasado_simple: {
-                    positivo: this.cel('I was', 'yo fui', '---'),
-                    negativo: this.cel("I wasn't", 'yo no fui', "wasn't - was not"),
-                    interrogativo: this.cel('Was I?', '¿Yo fui?', 'was')
+                    positivo: this.cel(`${en} ${perfil.pasadoSer}`, `${es}${S.pasado[idx]}`, '---'),
+                    negativo: this.cel(`${en} ${perfil.pasadoSerNeg}`, `${es}no ${S.pasado[idx]}`, perfil.pasadoSerNegHint),
+                    interrogativo: this.cel(`${perfil.pasadoSerInterrog} ${enBajo}?`, `¿${es}${S.pasado[idx]}?`, perfil.pasadoSer)
                 },
                 pasado_continuo: {
-                    positivo: this.cel('I was being', 'yo estaba siendo', 'was'),
-                    negativo: this.cel("I wasn't being", 'yo no estaba siendo', "wasn't - was not"),
-                    interrogativo: this.cel('Was I being?', '¿Yo estaba siendo?', 'was')
+                    positivo: this.cel(`${en} ${perfil.pasadoSer} being`, `${es}${P.estarPasado[idx]} siendo`, perfil.pasadoSer),
+                    negativo: this.cel(`${en} ${perfil.pasadoSerNeg} being`, `${es}no ${P.estarPasado[idx]} siendo`, perfil.pasadoSerNegHint),
+                    interrogativo: this.cel(`${perfil.pasadoSerInterrog} ${enBajo} being?`, `¿${es}${P.estarPasado[idx]} siendo?`, perfil.pasadoSer)
                 },
                 pasado_perfecto: {
-                    positivo: this.cel('I had been', 'yo había sido', 'had'),
-                    negativo: this.cel("I hadn't been", 'yo no había sido', "hadn't - had not"),
-                    interrogativo: this.cel('Had I been?', '¿Yo había sido?', 'had')
+                    positivo: this.cel(`${en} had been`, `${es}${P.haberPasado[idx]} sido`, 'had'),
+                    negativo: this.cel(`${en} hadn't been`, `${es}no ${P.haberPasado[idx]} sido`, "hadn't - had not"),
+                    interrogativo: this.cel(`Had ${enBajo} been?`, `¿${es}${P.haberPasado[idx]} sido?`, 'had')
                 },
                 pasado_perfecto_continuo: {
-                    positivo: this.cel('I had been being', 'yo había estado siendo', 'had been'),
-                    negativo: this.cel("I hadn't been being", 'yo no había estado siendo', "hadn't been - had not been"),
-                    interrogativo: this.cel('Had I been being?', '¿Yo había estado siendo?', 'had')
+                    positivo: this.cel(`${en} had been being`, `${es}${P.haberPasado[idx]} estado siendo`, 'had been'),
+                    negativo: this.cel(`${en} hadn't been being`, `${es}no ${P.haberPasado[idx]} estado siendo`, "hadn't been - had not been"),
+                    interrogativo: this.cel(`Had ${enBajo} been being?`, `¿${es}${P.haberPasado[idx]} estado siendo?`, 'had')
                 }
             },
             tiempo_futuro: {
                 futuro_simple: {
-                    positivo: this.cel('I will be', 'yo seré', 'will'),
-                    negativo: this.cel("I won't be", 'yo no seré', "won't - will not"),
-                    interrogativo: this.cel('Will I be?', '¿Yo seré?', 'will')
+                    positivo: this.cel(`${en} will be`, `${es}${S.futuro[idx]}`, 'will'),
+                    negativo: this.cel(`${en} won't be`, `${es}no ${S.futuro[idx]}`, "won't - will not"),
+                    interrogativo: this.cel(`Will ${enBajo} be?`, `¿${es}${S.futuro[idx]}?`, 'will')
                 },
                 futuro_going_to: {
-                    positivo: this.cel('I am going to be', 'yo voy a ser', 'am going to'),
-                    negativo: this.cel('I am not going to be', 'yo no voy a ser', 'am not going to'),
-                    interrogativo: this.cel('Am I going to be?', '¿Yo voy a ser?', 'am going to')
+                    positivo: this.cel(`${en} ${perfil.ser} going to be`, `${es}${P.irPresente[idx]} a ser`, `${perfil.ser} going to`),
+                    negativo: this.cel(`${en} ${perfil.serNeg} going to be`, `${es}no ${P.irPresente[idx]} a ser`, `${perfil.serNeg} going to`),
+                    interrogativo: this.cel(`${perfil.serInterrog} ${enBajo} going to be?`, `¿${es}${P.irPresente[idx]} a ser?`, `${perfil.ser} going to`)
                 },
                 futuro_continuo: {
-                    positivo: this.cel('I will be being', 'yo estaré siendo', 'will be'),
-                    negativo: this.cel("I won't be being", 'yo no estaré siendo', "won't be - will not be"),
-                    interrogativo: this.cel('Will I be being?', '¿Yo estaré siendo?', 'will')
+                    positivo: this.cel(`${en} will be being`, `${es}${P.estarFuturo[idx]} siendo`, 'will be'),
+                    negativo: this.cel(`${en} won't be being`, `${es}no ${P.estarFuturo[idx]} siendo`, "won't be - will not be"),
+                    interrogativo: this.cel(`Will ${enBajo} be being?`, `¿${es}${P.estarFuturo[idx]} siendo?`, 'will')
                 },
                 futuro_perfecto: {
-                    positivo: this.cel('I will have been', 'yo habré sido', 'will have'),
-                    negativo: this.cel("I won't have been", 'yo no habré sido', "won't have - will not have"),
-                    interrogativo: this.cel('Will I have been?', '¿Yo habré sido?', 'will')
+                    positivo: this.cel(`${en} will have been`, `${es}${P.haberFuturo[idx]} sido`, 'will have'),
+                    negativo: this.cel(`${en} won't have been`, `${es}no ${P.haberFuturo[idx]} sido`, "won't have - will not have"),
+                    interrogativo: this.cel(`Will ${enBajo} have been?`, `¿${es}${P.haberFuturo[idx]} sido?`, 'will')
                 },
                 futuro_perfecto_continuo: {
-                    positivo: this.cel('I will have been being', 'yo habré estado siendo', 'will have been'),
-                    negativo: this.cel("I won't have been being", 'yo no habré estado siendo', "won't have been - will not have been"),
-                    interrogativo: this.cel('Will I have been being?', '¿Yo habré estado siendo?', 'will')
+                    positivo: this.cel(`${en} will have been being`, `${es}${P.haberFuturo[idx]} estado siendo`, 'will have been'),
+                    negativo: this.cel(`${en} won't have been being`, `${es}no ${P.haberFuturo[idx]} estado siendo`, "won't have been - will not have been"),
+                    interrogativo: this.cel(`Will ${enBajo} have been being?`, `¿${es}${P.haberFuturo[idx]} estado siendo?`, 'will')
                 }
             }
         };
@@ -476,7 +724,7 @@ class JuegoTiemposVerbos {
                             const tiempo = this.obtenerNombreTiempo(tiempoKey);
                             const nombreVariacion = this.obtenerNombreVariacion(variacionKey);
                             const tipo = this.obtenerNombreTipo(tipoKey);
-                            const formaClave = this.formaVerboClave(tiempo, nombreVariacion, tipo);
+                            const formaClave = this.formaVerboClave(tiempo, nombreVariacion, tipo, pronombre.tercera);
                             pool.push({
                                 verbo: verbo.verbo,
                                 traduccion: verbo.traduccion,
@@ -499,17 +747,20 @@ class JuegoTiemposVerbos {
         return pool;
     }
 
-    // Determina qué forma toma el verbo principal (base/-ing/pasado/participio)
-    // según el tiempo, la variación y el tipo de oración. Es independiente del
-    // verbo concreto: el mismo patrón vale para cualquiera de los 30 verbos.
-    formaVerboClave(tiempo, variacion, tipo) {
+    // Determina qué forma toma el verbo principal (base/-ing/pasado/participio/
+    // tercera) según el tiempo, la variación, el tipo de oración y si el
+    // pronombre es de 3ª persona singular (he/she/it, que agregan -s/-es/-ies en
+    // presente simple positivo). Es independiente del verbo concreto: el mismo
+    // patrón vale para cualquiera de los verbos del pool.
+    formaVerboClave(tiempo, variacion, tipo, esTercera) {
         if (variacion === 'Continuo' || variacion === 'Perfecto Continuo') return 'ing';
         if (variacion === 'Perfecto') return 'participio';
         if (variacion === 'Going to') return 'base';
-        // Simple: el positivo del pasado usa el verbo en pasado; todo lo demás
-        // (incluido negativo/interrogativo del pasado, que llevan did/didn't) va
-        // en forma base.
+        // Simple: el positivo del pasado usa el verbo en pasado; el positivo del
+        // presente con he/she/it usa la 3ª persona; todo lo demás (incluido
+        // negativo/interrogativo, que llevan did/didn't o do/does) va en base.
         if (tiempo === 'PASADO' && tipo === 'Positiva') return 'pasado';
+        if (tiempo === 'PRESENTE' && variacion === 'Simple' && tipo === 'Positiva' && esTercera) return 'tercera';
         return 'base';
     }
 
