@@ -39,6 +39,14 @@
                             <small>Elige el auxiliar correcto (do/does, have/has, will...)</small>
                         </span>
                     </label>
+                    <label class="modo-opcion">
+                        <input type="radio" name="modo-juego" id="modo-formas" value="formas">
+                        <span class="modo-icono">🧩</span>
+                        <span class="modo-texto">
+                            <strong>Modo Formas</strong>
+                            <small>Arrastra el pasado/participio (irregulares) o la regla del -ed (regulares)</small>
+                        </span>
+                    </label>
                 </div>
 
                 <div class="config-preguntas">
@@ -117,6 +125,50 @@
                     <div class="pregunta-grupo">
                         <h4>¿Qué forma toma el verbo?</h4>
                         <div class="opciones" id="opciones-forma"></div>
+                    </div>
+                </div>
+
+                <div class="preguntas oculto" id="preguntas-formas">
+                    <div class="pregunta-grupo" id="formas-irregular">
+                        <h4>Arrastra el pasado y el participio a su lugar</h4>
+                        <div class="zonas-formas">
+                            <div class="zona-fija">
+                                <div class="zona-etiqueta">Presente</div>
+                                <div class="zona-valor" id="zona-presente-valor">---</div>
+                            </div>
+                            <div class="zona-soltar" id="zona-pasado" data-zona="pasado">
+                                <div class="zona-etiqueta">Pasado</div>
+                                <div class="zona-contenido"></div>
+                            </div>
+                            <div class="zona-soltar" id="zona-participio" data-zona="participio">
+                                <div class="zona-etiqueta">Participio</div>
+                                <div class="zona-contenido"></div>
+                            </div>
+                        </div>
+                        <div class="bandeja-fichas" id="bandeja-formas"></div>
+                    </div>
+
+                    <div class="pregunta-grupo oculto" id="formas-regular">
+                        <h4>¿Qué regla de ortografía usa este verbo al agregar -ed?</h4>
+                        <div class="bandeja-fichas bandeja-base" id="bandeja-formas-regular"></div>
+                        <div class="zonas-reglas" id="zonas-reglas">
+                            <div class="regla-zona zona-soltar" data-regla="simple">
+                                <div class="zona-etiqueta">+ed simple</div>
+                                <div class="zona-contenido"></div>
+                            </div>
+                            <div class="regla-zona zona-soltar" data-regla="duplica">
+                                <div class="zona-etiqueta">Duplica consonante</div>
+                                <div class="zona-contenido"></div>
+                            </div>
+                            <div class="regla-zona zona-soltar" data-regla="y_ied">
+                                <div class="zona-etiqueta">y → ied</div>
+                                <div class="zona-contenido"></div>
+                            </div>
+                            <div class="regla-zona zona-soltar" data-regla="silente">
+                                <div class="zona-etiqueta">Quita la e muda</div>
+                                <div class="zona-contenido"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

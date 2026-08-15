@@ -9,6 +9,27 @@ class JuegoTiemposVerbos {
         this.totalPool = this.poolCompleto.length;
         this.auxiliaresPorTipo = this.construirAuxiliaresPorTipo();
 
+        // Pool del Modo Formas: un ítem por verbo (no por conjugación), con la
+        // regla ortográfica del -ed derivada de base/pasado (null = irregular).
+        this.poolFormas = this.construirPoolFormas();
+        this.totalPoolFormas = this.poolFormas.length;
+        this.formasTipoActual = null;
+
+        // Nombres y explicaciones de las 4 reglas de ortografía del -ed, usadas
+        // en el Modo Formas para los verbos regulares.
+        this.nombresReglas = {
+            simple: '+ed simple',
+            duplica: 'Duplica consonante',
+            y_ied: 'y → ied',
+            silente: 'Quita la e muda'
+        };
+        this.reglasInfo = {
+            simple: { nombre: '+ed simple', tip: 'Se agrega -ed sin ningún cambio de ortografía (play → played).' },
+            duplica: { nombre: 'Duplica consonante', tip: 'Verbo de una sílaba que termina en consonante-vocal-consonante: se duplica la última consonante antes de -ed (stop → stopped).' },
+            y_ied: { nombre: 'y → ied', tip: 'Termina en consonante + y: la y se convierte en i antes de -ed (try → tried).' },
+            silente: { nombre: 'Quita la e muda', tip: 'Termina en e muda: solo se agrega -d, no -ed (use → used).' }
+        };
+
         this.modo = 'tiempos';
         this.conjugaciones = [];
         this.preguntaActual = 0;
@@ -211,7 +232,9 @@ class JuegoTiemposVerbos {
             { base: 'ask', ing: 'asking', past: 'asked', part: 'asked', trad: 'preguntar', pres: 'pregunto', pret: 'pregunté', fut: 'preguntaré', ger: 'preguntando', partES: 'preguntado' },
             { base: 'need', ing: 'needing', past: 'needed', part: 'needed', trad: 'necesitar', pres: 'necesito', pret: 'necesité', fut: 'necesitaré', ger: 'necesitando', partES: 'necesitado' },
             { base: 'feel', ing: 'feeling', past: 'felt', part: 'felt', trad: 'sentir', pres: 'siento', pret: 'sentí', fut: 'sentiré', ger: 'sintiendo', partES: 'sentido' },
-            { base: 'play', ing: 'playing', past: 'played', part: 'played', trad: 'jugar', pres: 'juego', pret: 'jugué', fut: 'jugaré', ger: 'jugando', partES: 'jugado' }
+            { base: 'play', ing: 'playing', past: 'played', part: 'played', trad: 'jugar', pres: 'juego', pret: 'jugué', fut: 'jugaré', ger: 'jugando', partES: 'jugado' },
+            { base: 'stop', ing: 'stopping', past: 'stopped', part: 'stopped', trad: 'parar', pres: 'paro', pret: 'paré', fut: 'pararé', ger: 'parando', partES: 'parado' },
+            { base: 'plan', ing: 'planning', past: 'planned', part: 'planned', trad: 'planear', pres: 'planeo', pret: 'planeé', fut: 'planearé', ger: 'planeando', partES: 'planeado' }
         ];
     }
 
@@ -412,6 +435,32 @@ class JuegoTiemposVerbos {
         };
     }
 
+    // Deriva la regla ortográfica del -ed comparando base y pasado (sin listas
+    // hardcodeadas): 'simple' | 'silente' | 'y_ied' | 'duplica', o null si el
+    // verbo es irregular (no encaja en ninguna regla regular).
+    reglaOrtografica(base, past) {
+        if (base + 'ed' === past) return 'simple';
+        if (base.endsWith('e') && base + 'd' === past) return 'silente';
+        const penultima = base[base.length - 2];
+        if (base.endsWith('y') && penultima && !'aeiou'.includes(penultima) && base.slice(0, -1) + 'ied' === past) {
+            return 'y_ied';
+        }
+        const ultima = base[base.length - 1];
+        if (base + ultima + 'ed' === past) return 'duplica';
+        return null;
+    }
+
+    // Pool del Modo Formas: un ítem por verbo (base/pasado/participio + regla).
+    construirPoolFormas() {
+        return this.verbos.map(v => ({
+            verbo: v.formas.base,
+            traduccion: v.traduccion,
+            pasado: v.formas.pasado,
+            participio: v.formas.participio,
+            regla: this.reglaOrtografica(v.formas.base, v.formas.pasado)
+        }));
+    }
+
     // Aplana TODOS los verbos en una sola lista de conjugaciones (el "pool" del que
     // se eligen las preguntas al azar).
     construirPoolCompleto() {
@@ -487,11 +536,8 @@ class JuegoTiemposVerbos {
     // ===================== Eventos y flujo del juego =====================
 
     inicializarEventos() {
-        // Configurar el máximo de preguntas según el total de conjugaciones disponibles
-        const inputNum = document.getElementById('num-preguntas');
-        const spanMax = document.getElementById('max-preguntas');
-        if (inputNum) inputNum.max = this.totalPool;
-        if (spanMax) spanMax.textContent = this.totalPool;
+        // Configurar el máximo de preguntas según el pool del modo seleccionado
+        this.actualizarMaxPreguntas('tiempos');
 
         // Botones de navegación
         document.getElementById('btn-iniciar').addEventListener('click', () => {
@@ -526,28 +572,53 @@ class JuegoTiemposVerbos {
             }
         });
 
-        // Selector de modo: en Modo Auxiliares no tiene sentido "con ayuda"
-        // porque la fórmula revelaría directamente la respuesta.
+        // Selector de modo: en Modo Auxiliares y Modo Formas no tiene sentido
+        // "con ayuda" (revelaría la respuesta o no aplica la teoría de tiempos),
+        // y cada modo tiene su propio tamaño de pool máximo.
         document.querySelectorAll('input[name="modo-juego"]').forEach(radio => {
-            radio.addEventListener('change', (e) => this.actualizarVisibilidadAyuda(e.target.value));
+            radio.addEventListener('change', (e) => {
+                this.actualizarVisibilidadAyuda(e.target.value);
+                this.actualizarMaxPreguntas(e.target.value);
+            });
         });
+
+        // Drag-and-drop del Modo Formas (funciona con mouse, touch y pen)
+        this.inicializarDragDrop();
     }
 
     actualizarVisibilidadAyuda(modo) {
         const checkAyuda = document.getElementById('con-ayuda');
         const wrapper = checkAyuda ? checkAyuda.closest('.check-ayuda') : null;
         if (!wrapper) return;
-        const esAuxiliares = modo === 'auxiliares';
-        wrapper.classList.toggle('oculto', esAuxiliares);
-        if (esAuxiliares) checkAyuda.checked = false;
+        const sinAyuda = modo === 'auxiliares' || modo === 'formas';
+        wrapper.classList.toggle('oculto', sinAyuda);
+        if (sinAyuda) checkAyuda.checked = false;
     }
 
-    // Lee y valida la cantidad de preguntas pedida (mínimo 10, máximo el total).
+    // Actualiza el máximo del input de cantidad de preguntas según el pool del
+    // modo elegido (el Modo Formas tiene un pool mucho más chico: un ítem por
+    // verbo, no por conjugación).
+    actualizarMaxPreguntas(modo) {
+        const inputNum = document.getElementById('num-preguntas');
+        const spanMax = document.getElementById('max-preguntas');
+        const max = modo === 'formas' ? this.totalPoolFormas : this.totalPool;
+        if (inputNum) {
+            inputNum.max = max;
+            if (parseInt(inputNum.value, 10) > max) inputNum.value = max;
+        }
+        if (spanMax) spanMax.textContent = max;
+    }
+
+    // Lee y valida la cantidad de preguntas pedida (mínimo 10, máximo el total
+    // del pool del modo actualmente seleccionado).
     obtenerNumPreguntas() {
         const input = document.getElementById('num-preguntas');
+        const modoInput = document.querySelector('input[name="modo-juego"]:checked');
+        const modo = modoInput ? modoInput.value : 'tiempos';
+        const max = modo === 'formas' ? this.totalPoolFormas : this.totalPool;
         let n = parseInt(input.value, 10);
         if (isNaN(n)) n = 10;
-        n = Math.max(10, Math.min(n, this.totalPool));
+        n = Math.max(10, Math.min(n, max));
         input.value = n;
         return n;
     }
@@ -564,15 +635,20 @@ class JuegoTiemposVerbos {
         this.errores = 0;
 
         const badge = document.getElementById('modo-badge');
-        if (badge) badge.textContent = this.modo === 'auxiliares' ? '🔧 Modo Auxiliares' : '🕒 Modo Tiempos';
+        if (badge) {
+            badge.textContent = this.modo === 'auxiliares' ? '🔧 Modo Auxiliares'
+                : this.modo === 'formas' ? '🧩 Modo Formas'
+                : '🕒 Modo Tiempos';
+        }
 
         this.mostrarPantalla('juego');
         this.mostrarPregunta();
     }
 
-    // Elige al azar `numPreguntas` conjugaciones entre todos los verbos y variaciones.
+    // Elige al azar `numPreguntas` ítems del pool correspondiente al modo actual.
     prepararConjugaciones(numPreguntas) {
-        const pool = this.shuffleArray(this.poolCompleto);
+        const poolBase = this.modo === 'formas' ? this.poolFormas : this.poolCompleto;
+        const pool = this.shuffleArray(poolBase);
         this.conjugaciones = pool.slice(0, numPreguntas);
     }
 
@@ -630,17 +706,19 @@ class JuegoTiemposVerbos {
 
         const conjugacion = this.conjugaciones[this.preguntaActual];
         const esModoAuxiliar = this.modo === 'auxiliares';
+        const esModoFormas = this.modo === 'formas';
 
         // Actualizar información del verbo
         document.getElementById('verbo-actual').textContent = conjugacion.verbo;
         document.getElementById('traduccion-actual').textContent = conjugacion.traduccion;
 
         // La oración en inglés revelaría el auxiliar, así que en ese modo se oculta
-        // hasta que el jugador responda.
-        document.querySelector('.oracion-container').classList.toggle('oculto', esModoAuxiliar);
-        document.getElementById('preguntas-tiempos').classList.toggle('oculto', esModoAuxiliar);
+        // hasta que el jugador responda. El Modo Formas tampoco usa una oración.
+        document.querySelector('.oracion-container').classList.toggle('oculto', esModoAuxiliar || esModoFormas);
+        document.getElementById('preguntas-tiempos').classList.toggle('oculto', esModoAuxiliar || esModoFormas);
         document.getElementById('preguntas-auxiliares').classList.toggle('oculto', !esModoAuxiliar);
-        document.getElementById('btn-ayuda').classList.toggle('oculto', esModoAuxiliar || !this.conAyuda);
+        document.getElementById('preguntas-formas').classList.toggle('oculto', !esModoFormas);
+        document.getElementById('btn-ayuda').classList.toggle('oculto', esModoAuxiliar || esModoFormas || !this.conAyuda);
 
         // Limpiar selecciones
         this.respuestasSeleccionadas = { tiempo: null, variacion: null, tipo: null, auxiliar: null, forma: null };
@@ -651,6 +729,8 @@ class JuegoTiemposVerbos {
             document.getElementById('auxiliar-pista').textContent = conjugacion.traduccionConjugacion;
             this.generarOpcionesAuxiliar(conjugacion);
             this.generarOpcionesForma(conjugacion);
+        } else if (esModoFormas) {
+            this.prepararPreguntaFormas(conjugacion);
         } else {
             document.getElementById('oracion-texto').textContent = conjugacion.conjugacion;
             document.getElementById('traduccion-oracion').textContent = conjugacion.traduccionConjugacion;
@@ -735,6 +815,255 @@ class JuegoTiemposVerbos {
         });
     }
 
+    // ===================== Modo Formas (drag-and-drop) =====================
+
+    // Decide qué sub-juego mostrar según si el verbo es irregular (regla===null)
+    // y arma su contenido.
+    prepararPreguntaFormas(item) {
+        const esIrregular = item.regla === null;
+        this.formasTipoActual = esIrregular ? 'irregular' : 'regular';
+        document.getElementById('formas-irregular').classList.toggle('oculto', !esIrregular);
+        document.getElementById('formas-regular').classList.toggle('oculto', esIrregular);
+
+        if (esIrregular) {
+            this.renderFormasIrregular(item);
+        } else {
+            this.renderFormasRegular(item);
+        }
+    }
+
+    crearFicha(valor) {
+        const ficha = document.createElement('div');
+        ficha.className = 'ficha';
+        ficha.textContent = valor;
+        ficha.dataset.valor = valor;
+        return ficha;
+    }
+
+    // Sub-juego para irregulares: arrastrar pasado y participio a su zona.
+    // Presente queda fijo (ya se muestra como dato). Los distractores salen de
+    // las formas de otros verbos irregulares del pool.
+    renderFormasIrregular(item) {
+        document.getElementById('zona-presente-valor').textContent = item.verbo;
+
+        ['zona-pasado', 'zona-participio'].forEach(id => {
+            const zona = document.getElementById(id);
+            zona.classList.remove('llena', 'correcta', 'incorrecta');
+            const contenido = zona.querySelector('.zona-contenido');
+            if (contenido) contenido.innerHTML = '';
+        });
+
+        const otras = this.poolFormas
+            .filter(v => v.regla === null && v.verbo !== item.verbo)
+            .flatMap(v => [v.pasado, v.participio]);
+        const distractoresUnicos = [...new Set(otras)].filter(f => f !== item.pasado && f !== item.participio);
+        const distractores = this.shuffleArray(distractoresUnicos).slice(0, 3);
+
+        const fichas = this.shuffleArray([item.pasado, item.participio, ...distractores]);
+        const bandeja = document.getElementById('bandeja-formas');
+        bandeja.innerHTML = '';
+        fichas.forEach(valor => bandeja.appendChild(this.crearFicha(valor)));
+    }
+
+    // Sub-juego para regulares: arrastrar el verbo a la regla de ortografía del
+    // -ed que le corresponde.
+    renderFormasRegular(item) {
+        const bandeja = document.getElementById('bandeja-formas-regular');
+        bandeja.innerHTML = '';
+        bandeja.appendChild(this.crearFicha(item.verbo));
+
+        document.querySelectorAll('#zonas-reglas .regla-zona').forEach(zona => {
+            zona.classList.remove('llena', 'correcta', 'incorrecta');
+            const contenido = zona.querySelector('.zona-contenido');
+            if (contenido) contenido.innerHTML = '';
+        });
+    }
+
+    // Motor genérico de drag-and-drop con Pointer Events (funciona igual con
+    // mouse, touch y pen). Se registra una sola vez y usa delegación de eventos
+    // porque las fichas se recrean en cada pregunta.
+    inicializarDragDrop() {
+        let arrastre = null;
+
+        document.addEventListener('pointerdown', (e) => {
+            const ficha = e.target.closest('.ficha');
+            if (!ficha) return;
+            e.preventDefault();
+
+            const rect = ficha.getBoundingClientRect();
+            arrastre = {
+                ficha,
+                offsetX: e.clientX - rect.left,
+                offsetY: e.clientY - rect.top,
+                origenPadre: ficha.parentElement,
+                origenNext: ficha.nextSibling
+            };
+
+            ficha.setPointerCapture(e.pointerId);
+            ficha.classList.add('arrastrando');
+            ficha.style.width = `${rect.width}px`;
+            ficha.style.position = 'fixed';
+            ficha.style.left = `${rect.left}px`;
+            ficha.style.top = `${rect.top}px`;
+            document.body.appendChild(ficha);
+        });
+
+        document.addEventListener('pointermove', (e) => {
+            if (!arrastre) return;
+            arrastre.ficha.style.left = `${e.clientX - arrastre.offsetX}px`;
+            arrastre.ficha.style.top = `${e.clientY - arrastre.offsetY}px`;
+
+            document.querySelectorAll('.zona-soltar').forEach(z => z.classList.remove('resaltada'));
+            const zona = this.elementoZonaBajo(e.clientX, e.clientY, arrastre.ficha);
+            if (zona) zona.classList.add('resaltada');
+        });
+
+        document.addEventListener('pointerup', (e) => {
+            if (!arrastre) return;
+            const { ficha, origenPadre, origenNext } = arrastre;
+
+            ficha.classList.remove('arrastrando');
+            ficha.style.position = '';
+            ficha.style.left = '';
+            ficha.style.top = '';
+            ficha.style.width = '';
+            document.querySelectorAll('.zona-soltar').forEach(z => z.classList.remove('resaltada'));
+
+            const zonaDestino = this.elementoZonaBajo(e.clientX, e.clientY, ficha);
+            if (zonaDestino) {
+                this.colocarFichaEnZona(ficha, zonaDestino);
+            } else if (origenNext && origenNext.parentElement === origenPadre) {
+                origenPadre.insertBefore(ficha, origenNext);
+            } else {
+                origenPadre.appendChild(ficha);
+            }
+
+            // Si la zona de origen quedó vacía tras el movimiento, se desmarca.
+            const zonaOrigen = origenPadre.closest ? origenPadre.closest('.zona-soltar') : null;
+            if (zonaOrigen) {
+                const contenido = zonaOrigen.querySelector('.zona-contenido');
+                zonaOrigen.classList.toggle('llena', !!(contenido && contenido.children.length > 0));
+            }
+
+            arrastre = null;
+            this.actualizarBotonResponderFormas();
+        });
+    }
+
+    // Devuelve la `.zona-soltar` que está debajo de un punto, ignorando la ficha
+    // que se está arrastrando (para que no se detecte a sí misma).
+    elementoZonaBajo(x, y, fichaExcluida) {
+        const prevDisplay = fichaExcluida.style.display;
+        fichaExcluida.style.display = 'none';
+        const el = document.elementFromPoint(x, y);
+        fichaExcluida.style.display = prevDisplay;
+        return el ? el.closest('.zona-soltar') : null;
+    }
+
+    // Coloca una ficha dentro de una zona; si ya había otra, la devuelve a su bandeja.
+    colocarFichaEnZona(ficha, zona) {
+        const contenido = zona.querySelector('.zona-contenido');
+        if (!contenido) return;
+        const existente = contenido.querySelector('.ficha');
+        if (existente && existente !== ficha) {
+            const bandeja = this.formasTipoActual === 'irregular'
+                ? document.getElementById('bandeja-formas')
+                : document.getElementById('bandeja-formas-regular');
+            if (bandeja) bandeja.appendChild(existente);
+        }
+        contenido.appendChild(ficha);
+        zona.classList.add('llena');
+    }
+
+    // Habilita "Responder" cuando las zonas necesarias del sub-juego actual están llenas.
+    actualizarBotonResponderFormas() {
+        let listo;
+        if (this.formasTipoActual === 'irregular') {
+            const pasadoLleno = document.getElementById('zona-pasado').classList.contains('llena');
+            const participioLleno = document.getElementById('zona-participio').classList.contains('llena');
+            listo = pasadoLleno && participioLleno;
+        } else {
+            listo = document.querySelectorAll('#zonas-reglas .regla-zona.llena').length > 0;
+        }
+        document.getElementById('btn-responder').disabled = !listo;
+    }
+
+    verificarRespuestaFormas(item) {
+        let esCorrecto, detalleUsuario, detalleCorrecto;
+
+        if (item.regla === null) {
+            const pasadoValor = document.querySelector('#zona-pasado .ficha')?.dataset.valor || '(sin responder)';
+            const participioValor = document.querySelector('#zona-participio .ficha')?.dataset.valor || '(sin responder)';
+            esCorrecto = pasadoValor === item.pasado && participioValor === item.participio;
+            detalleUsuario = `${item.verbo} – ${pasadoValor} – ${participioValor}`;
+            detalleCorrecto = `${item.verbo} – ${item.pasado} – ${item.participio}`;
+            document.getElementById('zona-pasado').classList.add(pasadoValor === item.pasado ? 'correcta' : 'incorrecta');
+            document.getElementById('zona-participio').classList.add(participioValor === item.participio ? 'correcta' : 'incorrecta');
+        } else {
+            const zonaElegida = document.querySelector('#zonas-reglas .regla-zona.llena');
+            const reglaElegida = zonaElegida ? zonaElegida.dataset.regla : null;
+            esCorrecto = reglaElegida === item.regla;
+            detalleUsuario = reglaElegida ? this.nombresReglas[reglaElegida] : '(sin responder)';
+            detalleCorrecto = this.nombresReglas[item.regla];
+            if (zonaElegida) zonaElegida.classList.add(esCorrecto ? 'correcta' : 'incorrecta');
+        }
+
+        if (esCorrecto) {
+            this.aciertos++;
+        } else {
+            this.errores++;
+        }
+        this.actualizarEstadisticas();
+
+        document.getElementById('btn-responder').disabled = true;
+        this.mostrarModalExplicacionFormas(item, esCorrecto, detalleUsuario, detalleCorrecto);
+    }
+
+    mostrarModalExplicacionFormas(item, esCorrecto, detalleUsuario, detalleCorrecto) {
+        document.getElementById('modal-oracion-ingles').textContent = item.verbo;
+        document.getElementById('modal-oracion-traduccion').textContent = item.traduccion;
+        document.querySelector('.auxiliar-info').style.display = 'none';
+
+        const resultado = document.getElementById('modal-resultado');
+        if (esCorrecto) {
+            resultado.textContent = '✅ ¡Correcto!';
+            resultado.className = 'modal-resultado correcto';
+        } else {
+            resultado.textContent = '❌ Incorrecto';
+            resultado.className = 'modal-resultado incorrecto';
+        }
+
+        document.getElementById('modal-respuesta-usuario').textContent = detalleUsuario;
+        document.getElementById('modal-respuesta-correcta').textContent = detalleCorrecto;
+        const comparacion = document.querySelector('.respuestas-comparacion');
+        if (comparacion) comparacion.style.display = esCorrecto ? 'none' : 'flex';
+
+        document.getElementById('modal-explicacion-contenido').innerHTML = this.construirTeoriaFormasHtml(item);
+
+        document.getElementById('modal-explicacion').classList.add('active');
+        if (esCorrecto) this.celebrarAcierto();
+    }
+
+    construirTeoriaFormasHtml(item) {
+        if (item.regla === null) {
+            return `
+                <div class="explicacion-item">
+                    <div class="explicacion-tiempo">Verbo irregular</div>
+                    <div class="explicacion-descripcion">Este verbo no sigue la regla del -ed: sus formas de pasado y participio hay que memorizarlas.</div>
+                    <div class="explicacion-formula"><strong>Presente:</strong> ${item.verbo} &nbsp; <strong>Pasado:</strong> ${item.pasado} &nbsp; <strong>Participio:</strong> ${item.participio}</div>
+                </div>
+            `;
+        }
+        const regla = this.reglasInfo[item.regla];
+        return `
+            <div class="explicacion-item">
+                <div class="explicacion-tiempo">Verbo regular — ${regla.nombre}</div>
+                <div class="explicacion-descripcion">${regla.tip}</div>
+                <div class="explicacion-formula"><strong>${item.verbo}</strong> → <strong>${item.pasado}</strong></div>
+            </div>
+        `;
+    }
+
     seleccionarOpcion(elemento) {
         const tipo = elemento.dataset.tipo;
         const valor = elemento.dataset.valor;
@@ -762,6 +1091,8 @@ class JuegoTiemposVerbos {
         const conjugacion = this.conjugaciones[this.preguntaActual];
         if (this.modo === 'auxiliares') {
             this.verificarRespuestaAuxiliar(conjugacion);
+        } else if (this.modo === 'formas') {
+            this.verificarRespuestaFormas(conjugacion);
         } else {
             this.verificarRespuestaTiempos(conjugacion);
         }

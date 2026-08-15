@@ -92,7 +92,7 @@ header p {
 /* Selector de modo de juego */
 .selector-modo {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
     gap: 10px;
     margin: 18px 0;
 }
@@ -785,6 +785,131 @@ header p {
     box-shadow: 0 3px 0 var(--rojo);
 }
 
+/* Modo Formas: zonas de drop y fichas arrastrables */
+.zonas-formas {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.zona-fija,
+.zona-soltar {
+    border-radius: 14px;
+    padding: 10px 8px;
+    text-align: center;
+    min-height: 74px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+}
+
+.zona-fija {
+    background: var(--verde-suave);
+    border: 2px solid var(--verde);
+}
+
+.zona-valor {
+    font-family: 'Baloo 2', 'Nunito', sans-serif;
+    font-weight: 800;
+    color: var(--verde-oscuro);
+    font-size: 1rem;
+}
+
+.zona-soltar {
+    background: var(--fondo);
+    border: 2px dashed var(--borde);
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+
+.zona-soltar.resaltada {
+    border-color: var(--azul);
+    background: var(--azul-suave);
+    transform: scale(1.03);
+}
+
+.zona-soltar.llena {
+    border-style: solid;
+    border-color: var(--azul);
+}
+
+.zona-soltar.correcta {
+    border-color: var(--verde);
+    background: var(--verde-suave);
+}
+
+.zona-soltar.incorrecta {
+    border-color: var(--rojo);
+    background: var(--rojo-suave);
+}
+
+.zona-etiqueta {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--texto-suave);
+}
+
+.zona-contenido {
+    min-height: 34px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bandeja-fichas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    padding: 12px;
+    background: white;
+    border: 1px dashed var(--borde);
+    border-radius: 14px;
+    min-height: 54px;
+}
+
+.bandeja-base {
+    margin-bottom: 12px;
+}
+
+.ficha {
+    padding: 10px 14px;
+    background: white;
+    border: 2px solid var(--azul);
+    color: var(--azul-oscuro);
+    border-radius: 12px;
+    box-shadow: 0 3px 0 var(--azul);
+    font-weight: 800;
+    font-size: 0.85rem;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.ficha.arrastrando {
+    cursor: grabbing;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    opacity: 0.95;
+    transform: scale(1.05);
+    pointer-events: none;
+}
+
+.zonas-reglas {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.regla-zona {
+    min-height: 64px;
+}
+
 /* Pantalla de resultados */
 .resultados {
     margin: 20px 0;
@@ -934,6 +1059,21 @@ header p {
         font-size: 0.78rem;
     }
 
+    .zona-fija,
+    .zona-soltar {
+        padding: 8px 5px;
+        min-height: 64px;
+    }
+
+    .zona-valor {
+        font-size: 0.85rem;
+    }
+
+    .ficha {
+        padding: 8px 11px;
+        font-size: 0.78rem;
+    }
+
     .resultado-item {
         padding: 8px 0;
     }
@@ -1037,6 +1177,18 @@ header p {
         padding: 8px 6px;
         font-size: 0.76rem;
         line-height: 1.2;
+    }
+
+    .zonas-formas {
+        gap: 6px;
+    }
+
+    .zona-etiqueta {
+        font-size: 0.6rem;
+    }
+
+    .zonas-reglas {
+        gap: 6px;
     }
 
     .stats {
