@@ -960,7 +960,9 @@ class JuegoTiemposVerbos {
         const checkAyuda = document.getElementById('con-ayuda');
         const wrapper = checkAyuda ? checkAyuda.closest('.check-ayuda') : null;
         if (!wrapper) return;
-        const sinAyuda = modo === 'auxiliares' || modo === 'formas';
+        // En Modo Auxiliares no tiene sentido: la fórmula revelaría directamente
+        // la respuesta. Tiempos y Formas sí pueden mostrar ayuda genérica.
+        const sinAyuda = modo === 'auxiliares';
         wrapper.classList.toggle('oculto', sinAyuda);
         if (sinAyuda) checkAyuda.checked = false;
     }
@@ -998,7 +1000,7 @@ class JuegoTiemposVerbos {
         const modoInput = document.querySelector('input[name="modo-juego"]:checked');
         this.modo = modoInput ? modoInput.value : 'tiempos';
         const checkAyuda = document.getElementById('con-ayuda');
-        this.conAyuda = this.modo === 'tiempos' && !!(checkAyuda && checkAyuda.checked);
+        this.conAyuda = this.modo !== 'auxiliares' && !!(checkAyuda && checkAyuda.checked);
         this.prepararConjugaciones(numPreguntas);
         this.preguntaActual = 0;
         this.aciertos = 0;
@@ -1099,7 +1101,7 @@ class JuegoTiemposVerbos {
         document.getElementById('preguntas-tiempos').classList.toggle('oculto', esModoAuxiliar || esModoFormas);
         document.getElementById('preguntas-auxiliares').classList.toggle('oculto', !esModoAuxiliar);
         document.getElementById('preguntas-formas').classList.toggle('oculto', !esModoFormas);
-        document.getElementById('btn-ayuda').classList.toggle('oculto', esModoAuxiliar || esModoFormas || !this.conAyuda);
+        document.getElementById('btn-ayuda').classList.toggle('oculto', esModoAuxiliar || !this.conAyuda);
 
         // Limpiar selecciones
         this.respuestasSeleccionadas = { tiempo: null, variacion: null, tipo: null, auxiliar: null, forma: null };
@@ -1447,6 +1449,32 @@ class JuegoTiemposVerbos {
         `;
     }
 
+    // Ayuda del Modo Formas ANTES de responder: a diferencia de
+    // construirTeoriaFormasHtml (que se muestra después y revela la respuesta
+    // de este verbo puntual), acá solo se da referencia genérica para razonar
+    // la respuesta, sin decir cuál es.
+    construirAyudaFormasHtml(item) {
+        if (item.regla === null) {
+            return `
+                <div class="explicacion-item">
+                    <div class="explicacion-tiempo">📘 ¿Qué es el participio?</div>
+                    <div class="explicacion-descripcion">Es la "3ª forma" del verbo (después del presente y el pasado). Se usa para armar los tiempos perfectos (have/has/had + participio). En los regulares es igual al pasado; en los irregulares, como este, puede ser distinto: <strong>go → went → gone</strong>.</div>
+                    <div class="explicacion-formula">💡 Truco: si el verbo termina en <strong>-ow</strong>, el participio suele terminar en <strong>-own</strong> (know → known, throw → thrown). Y si no cambia nunca (put/put/put), ya te ahorraste una forma.</div>
+                </div>
+            `;
+        }
+        const filas = Object.values(this.reglasInfo)
+            .map(r => `<div class="aux-fila"><span class="ej-tipo">${r.nombre}</span> ${r.tip}</div>`)
+            .join('');
+        return `
+            <div class="explicacion-item">
+                <div class="explicacion-tiempo">✍️ Reglas de ortografía del -ed</div>
+                <div class="explicacion-descripcion">Este verbo es regular y sigue una de estas 4 reglas. Fijate cómo termina para decidir cuál.</div>
+                <div class="explicacion-auxiliares">${filas}</div>
+            </div>
+        `;
+    }
+
     seleccionarOpcion(elemento) {
         const tipo = elemento.dataset.tipo;
         const valor = elemento.dataset.valor;
@@ -1729,9 +1757,15 @@ class JuegoTiemposVerbos {
     abrirAyuda() {
         const conjugacion = this.conjugaciones[this.preguntaActual];
         if (!conjugacion) return;
-        document.getElementById('ayuda-oracion').textContent =
-            `${conjugacion.conjugacion} — ${conjugacion.traduccionConjugacion}`;
-        document.getElementById('ayuda-contenido').innerHTML = this.construirTeoriaHtml(conjugacion);
+        if (this.modo === 'formas') {
+            document.getElementById('ayuda-oracion').textContent =
+                `${conjugacion.verbo} — ${conjugacion.traduccion}`;
+            document.getElementById('ayuda-contenido').innerHTML = this.construirAyudaFormasHtml(conjugacion);
+        } else {
+            document.getElementById('ayuda-oracion').textContent =
+                `${conjugacion.conjugacion} — ${conjugacion.traduccionConjugacion}`;
+            document.getElementById('ayuda-contenido').innerHTML = this.construirTeoriaHtml(conjugacion);
+        }
         document.getElementById('modal-ayuda').classList.add('active');
     }
 
