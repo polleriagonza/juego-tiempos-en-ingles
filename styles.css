@@ -211,6 +211,42 @@ header p {
     font-weight: 600;
 }
 
+.resumen-progreso {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 16px;
+    margin-top: 16px;
+}
+
+.resumen-item {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--texto);
+}
+
+.resumen-item strong {
+    font-family: 'Baloo 2', 'Nunito', sans-serif;
+    color: var(--violeta);
+}
+
+.btn-texto {
+    display: block;
+    margin: 10px auto 0;
+    padding: 6px 10px;
+    background: none;
+    border: none;
+    color: var(--texto-suave);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.btn-texto:hover {
+    color: var(--rojo-oscuro);
+}
+
 .btn-ayuda {
     display: block;
     width: 100%;
@@ -530,6 +566,19 @@ header p {
     background: var(--rojo-suave);
     color: var(--rojo-oscuro);
     animation: sacudida 0.45s ease;
+}
+
+.racha-record {
+    text-align: center;
+    font-family: 'Baloo 2', 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.95rem;
+    padding: 8px;
+    border-radius: 12px;
+    margin: -6px 0 12px;
+    background: linear-gradient(120deg, var(--amarillo), var(--naranja));
+    color: #6b3a00;
+    animation: rebote 0.5s ease;
 }
 
 .auxiliar-info {
@@ -986,6 +1035,86 @@ header p {
 
 .acciones {
     margin-top: 20px;
+}
+
+/* Lección extra al terminar el Modo Formas */
+.leccion-formas {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 2px dashed var(--borde);
+    text-align: left;
+}
+
+.leccion-formas h3 {
+    font-family: 'Baloo 2', 'Nunito', sans-serif;
+    font-size: 1rem;
+    color: var(--violeta-oscuro);
+    margin: 16px 0 8px;
+}
+
+.leccion-formas h3:first-child {
+    margin-top: 0;
+}
+
+.leccion-formas p {
+    color: var(--texto);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-bottom: 0;
+}
+
+.leccion-ejemplos {
+    margin-top: 10px;
+    background: var(--fondo);
+    border-radius: 12px;
+    padding: 8px 10px;
+    display: grid;
+    gap: 4px;
+}
+
+.leccion-ejemplo-fila {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 4px 0;
+}
+
+.leccion-ejemplo-header {
+    color: var(--texto-suave);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 800;
+}
+
+.leccion-ejemplo-fila.distinto span:nth-child(2),
+.leccion-ejemplo-fila.distinto span:nth-child(3) {
+    color: var(--rojo-oscuro);
+}
+
+.leccion-ejemplo-fila.igual span:nth-child(2),
+.leccion-ejemplo-fila.igual span:nth-child(3) {
+    color: var(--verde-oscuro);
+}
+
+.leccion-lista {
+    margin: 0;
+    padding-left: 20px;
+    display: grid;
+    gap: 6px;
+}
+
+.leccion-lista li {
+    color: var(--texto);
+    font-size: 0.82rem;
+    line-height: 1.45;
+}
+
+.leccion-lista strong {
+    color: var(--violeta-oscuro);
 }
 
 /* Responsive para móviles */

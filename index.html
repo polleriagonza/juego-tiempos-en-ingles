@@ -59,6 +59,12 @@
                     </label>
                 </div>
                 <button id="btn-iniciar" class="btn btn-primary">Comenzar Juego</button>
+
+                <div class="resumen-progreso">
+                    <span class="resumen-item">🏆 <strong id="resumen-dominadas">0</strong> preguntas dominadas</span>
+                    <span class="resumen-item">🔥 Mejor racha: <strong id="resumen-mejor-racha">0</strong></span>
+                </div>
+                <button id="btn-borrar-progreso" class="btn-texto">🗑️ Borrar mi progreso guardado</button>
             </div>
         </div>
 
@@ -81,6 +87,8 @@
                     <span>Aciertos: <span id="aciertos">0</span></span>
                     <span class="separator">|</span>
                     <span>Errores: <span id="errores">0</span></span>
+                    <span class="separator">|</span>
+                    <span>🔥 Racha: <span id="racha-actual">0</span></span>
                 </div>
             </div>
 
@@ -200,6 +208,42 @@
                         <span id="porcentaje-final" class="valor"></span>
                     </div>
                 </div>
+
+                <!-- Lección extra al terminar el Modo Formas: qué es el participio,
+                     ejemplos y trucos para memorizar irregulares. -->
+                <div class="leccion-formas oculto" id="leccion-formas">
+                    <h3>📘 ¿Qué es el participio?</h3>
+                    <p>Es la "3ª forma" del verbo (después del presente y el pasado). Se usa para armar los tiempos <strong>perfectos</strong> (have/has/had + participio) y la voz pasiva. En los verbos <strong>regulares</strong> es idéntico al pasado (played → played). En los <strong>irregulares</strong> puede ser totalmente distinto: <strong>go → went → gone</strong>.</p>
+
+                    <div class="leccion-ejemplos">
+                        <div class="leccion-ejemplo-fila leccion-ejemplo-header">
+                            <span>Presente</span><span>Pasado</span><span>Participio</span>
+                        </div>
+                        <div class="leccion-ejemplo-fila distinto"><span>go</span><span>went</span><span>gone</span></div>
+                        <div class="leccion-ejemplo-fila distinto"><span>see</span><span>saw</span><span>seen</span></div>
+                        <div class="leccion-ejemplo-fila distinto"><span>do</span><span>did</span><span>done</span></div>
+                        <div class="leccion-ejemplo-fila distinto"><span>give</span><span>gave</span><span>given</span></div>
+                        <div class="leccion-ejemplo-fila igual"><span>put</span><span>put</span><span>put</span></div>
+                        <div class="leccion-ejemplo-fila igual"><span>play</span><span>played</span><span>played</span></div>
+                    </div>
+
+                    <h3>🧠 Trucos para memorizar irregulares</h3>
+                    <ul class="leccion-lista">
+                        <li>Si pasado y participio son <strong>iguales</strong> (played, worked, had, put, let...), solo hay que aprender <strong>una</strong> forma extra además del presente.</li>
+                        <li>Varios irregulares en <strong>-ow</strong> tienen participio en <strong>-own</strong>: know → known, grow → grown, throw → thrown, blow → blown.</li>
+                        <li>El presente perfecto <strong>siempre</strong> lleva have/has + participio, nunca + pasado: "I have gone" (no "I have went").</li>
+                        <li>Agrupá los irregulares por patrón en vez de memorizarlos sueltos: los que no cambian nunca (put/put/put, cut/cut/cut, cost/cost/cost) son los más fáciles.</li>
+                    </ul>
+
+                    <h3>✍️ Repaso: reglas del -ed (regulares)</h3>
+                    <ul class="leccion-lista">
+                        <li><strong>+ed simple:</strong> se agrega -ed sin cambios (play → played).</li>
+                        <li><strong>Duplica consonante:</strong> una sílaba, termina en consonante-vocal-consonante (stop → stopped).</li>
+                        <li><strong>y → ied:</strong> termina en consonante + y (try → tried).</li>
+                        <li><strong>Quita la e muda:</strong> termina en e muda, solo se agrega -d (use → used).</li>
+                    </ul>
+                </div>
+
                 <div class="acciones">
                     <button id="btn-reiniciar" class="btn btn-primary">Jugar de Nuevo</button>
                     <button id="btn-inicio" class="btn btn-secondary">Volver al Inicio</button>
@@ -213,6 +257,7 @@
         <div class="modal">
             <div class="confeti-container" id="confeti-container"></div>
             <div class="modal-resultado" id="modal-resultado"></div>
+            <div class="racha-record oculto" id="modal-racha-record"></div>
             <div class="modal-header">
                 <div class="modal-title" id="modal-oracion-ingles">---</div>
                 <div class="modal-subtitle" id="modal-oracion-traduccion">---</div>

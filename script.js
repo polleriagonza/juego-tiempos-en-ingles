@@ -78,6 +78,12 @@ class JuegoTiemposVerbos {
         this.totalPoolFormas = this.poolFormas.length;
         this.formasTipoActual = null;
 
+        // Progreso persistido en localStorage: mejor racha histórica y preguntas
+        // dominadas (5+ aciertos, ya no vuelven a salir). La racha actual es solo
+        // de esta sesión (no se guarda hasta que se supera el récord).
+        this.progreso = this.cargarProgreso();
+        this.rachaActual = 0;
+
         // Nombres y explicaciones de las 4 reglas de ortografía del -ed, usadas
         // en el Modo Formas para los verbos regulares.
         this.nombresReglas = {
@@ -699,8 +705,10 @@ class JuegoTiemposVerbos {
     }
 
     // Pool del Modo Formas: un ítem por verbo (base/pasado/participio + regla).
+    // El `id` es estable entre partidas (se usa para el progreso guardado).
     construirPoolFormas() {
         return this.verbos.map(v => ({
+            id: v.formas.base,
             verbo: v.formas.base,
             traduccion: v.traduccion,
             pasado: v.formas.pasado,
@@ -725,7 +733,11 @@ class JuegoTiemposVerbos {
                             const nombreVariacion = this.obtenerNombreVariacion(variacionKey);
                             const tipo = this.obtenerNombreTipo(tipoKey);
                             const formaClave = this.formaVerboClave(tiempo, nombreVariacion, tipo, pronombre.tercera);
+                            // Id estable entre partidas: no depende del orden ni de índices,
+                            // así que sigue siendo válido aunque cambie el pool en el futuro.
+                            const id = `${verbo.verbo}_${pronombre.pronombre}_${tiempoKey}_${variacionKey}_${tipoKey}`;
                             pool.push({
+                                id,
                                 verbo: verbo.verbo,
                                 traduccion: verbo.traduccion,
                                 conjugacion: conjugacion.conjugacion,
@@ -782,6 +794,92 @@ class JuegoTiemposVerbos {
             Negativa: [...porTipo.Negativa],
             Interrogativa: [...porTipo.Interrogativa]
         };
+    }
+
+    // ===================== Progreso persistido (localStorage) =====================
+
+    // Lee el progreso guardado. Si no existe, está corrupto, o localStorage no
+    // está disponible (modo privado, cuota excedida...), devuelve el estado por
+    // defecto en memoria sin romper el juego.
+    cargarProgreso() {
+        const porDefecto = { mejorRacha: 0, dominadas: {} };
+        try {
+            const raw = localStorage.getItem('jtv_progreso_v1');
+            if (!raw) return porDefecto;
+            const datos = JSON.parse(raw);
+            return {
+                mejorRacha: typeof datos.mejorRacha === 'number' ? datos.mejorRacha : 0,
+                dominadas: datos.dominadas && typeof datos.dominadas === 'object' ? datos.dominadas : {}
+            };
+        } catch (e) {
+            return porDefecto;
+        }
+    }
+
+    guardarProgreso() {
+        try {
+            localStorage.setItem('jtv_progreso_v1', JSON.stringify(this.progreso));
+        } catch (e) {
+            // No hay forma de persistir (modo privado, cuota excedida...); se
+            // sigue jugando igual, solo que sin guardar entre sesiones.
+        }
+    }
+
+    // Clave única de progreso: el id de la pregunta es el mismo para Tiempos y
+    // Auxiliares (comparten pool), pero dominar una no implica dominar la otra,
+    // así que el modo forma parte de la clave.
+    claveProgreso(conjugacion) {
+        return `${this.modo}:${conjugacion.id}`;
+    }
+
+    estaDominada(conjugacion) {
+        return (this.progreso.dominadas[this.claveProgreso(conjugacion)] || 0) >= 5;
+    }
+
+    // Registra el resultado de una pregunta: actualiza la racha (se corta con un
+    // error) y, si acertó, suma un acierto acumulado hacia el dominio de esa
+    // pregunta puntual (no se resetea por errores en otras preguntas). Devuelve
+    // true si se acaba de superar un récord de racha previo (para festejarlo).
+    registrarResultado(conjugacion, esCorrecto) {
+        const mejorRachaAnterior = this.progreso.mejorRacha;
+        let esNuevoRecord = false;
+
+        if (esCorrecto) {
+            this.rachaActual++;
+            if (this.rachaActual > this.progreso.mejorRacha) {
+                this.progreso.mejorRacha = this.rachaActual;
+                esNuevoRecord = mejorRachaAnterior > 0;
+            }
+            const clave = this.claveProgreso(conjugacion);
+            const aciertosPrevios = this.progreso.dominadas[clave] || 0;
+            if (aciertosPrevios < 5) this.progreso.dominadas[clave] = aciertosPrevios + 1;
+        } else {
+            this.rachaActual = 0;
+        }
+
+        this.guardarProgreso();
+        return esNuevoRecord;
+    }
+
+    contarDominadas() {
+        return Object.values(this.progreso.dominadas).filter(n => n >= 5).length;
+    }
+
+    // Borra todo el progreso guardado (dominadas + mejor racha). Se llama desde
+    // el botón del home, con confirmación previa.
+    resetearProgreso() {
+        this.progreso = { mejorRacha: 0, dominadas: {} };
+        this.rachaActual = 0;
+        this.guardarProgreso();
+        this.actualizarResumenProgreso();
+    }
+
+    // Actualiza el resumen de progreso mostrado en la pantalla de inicio.
+    actualizarResumenProgreso() {
+        const spanDominadas = document.getElementById('resumen-dominadas');
+        const spanMejorRacha = document.getElementById('resumen-mejor-racha');
+        if (spanDominadas) spanDominadas.textContent = this.contarDominadas();
+        if (spanMejorRacha) spanMejorRacha.textContent = this.progreso.mejorRacha;
     }
 
     // ===================== Eventos y flujo del juego =====================
@@ -848,6 +946,14 @@ class JuegoTiemposVerbos {
 
         // Drag-and-drop del Modo Formas (funciona con mouse, touch y pen)
         this.inicializarDragDrop();
+
+        // Progreso guardado: resumen en el home + botón para borrarlo
+        document.getElementById('btn-borrar-progreso').addEventListener('click', () => {
+            if (confirm('¿Borrar todo tu progreso guardado (racha y preguntas dominadas)? Esta acción no se puede deshacer.')) {
+                this.resetearProgreso();
+            }
+        });
+        this.actualizarResumenProgreso();
     }
 
     actualizarVisibilidadAyuda(modo) {
@@ -910,10 +1016,21 @@ class JuegoTiemposVerbos {
     }
 
     // Elige al azar `numPreguntas` ítems del pool correspondiente al modo actual.
+    // Elige `numPreguntas` al azar, priorizando las que todavía no están
+    // dominadas (5+ aciertos). Si no quedan suficientes sin dominar (posible en
+    // Modo Formas, que solo tiene 32 verbos), completa con dominadas para no
+    // dejar el juego sin preguntas.
     prepararConjugaciones(numPreguntas) {
         const poolBase = this.modo === 'formas' ? this.poolFormas : this.poolCompleto;
-        const pool = this.shuffleArray(poolBase);
-        this.conjugaciones = pool.slice(0, numPreguntas);
+        const sinDominar = this.shuffleArray(poolBase.filter(item => !this.estaDominada(item)));
+
+        let seleccion = sinDominar.slice(0, numPreguntas);
+        if (seleccion.length < numPreguntas) {
+            const dominadas = this.shuffleArray(poolBase.filter(item => this.estaDominada(item)));
+            seleccion = seleccion.concat(dominadas.slice(0, numPreguntas - seleccion.length));
+        }
+
+        this.conjugaciones = this.shuffleArray(seleccion);
     }
 
     obtenerNombreTiempo(tiempoKey) {
@@ -1277,13 +1394,14 @@ class JuegoTiemposVerbos {
         } else {
             this.errores++;
         }
+        const esNuevoRecord = this.registrarResultado(item, esCorrecto);
         this.actualizarEstadisticas();
 
         document.getElementById('btn-responder').disabled = true;
-        this.mostrarModalExplicacionFormas(item, esCorrecto, detalleUsuario, detalleCorrecto);
+        this.mostrarModalExplicacionFormas(item, esCorrecto, detalleUsuario, detalleCorrecto, esNuevoRecord);
     }
 
-    mostrarModalExplicacionFormas(item, esCorrecto, detalleUsuario, detalleCorrecto) {
+    mostrarModalExplicacionFormas(item, esCorrecto, detalleUsuario, detalleCorrecto, esNuevoRecord) {
         document.getElementById('modal-oracion-ingles').textContent = item.verbo;
         document.getElementById('modal-oracion-traduccion').textContent = item.traduccion;
         document.querySelector('.auxiliar-info').style.display = 'none';
@@ -1296,6 +1414,7 @@ class JuegoTiemposVerbos {
             resultado.textContent = '❌ Incorrecto';
             resultado.className = 'modal-resultado incorrecto';
         }
+        this.mostrarBannerRacha(esNuevoRecord);
 
         document.getElementById('modal-respuesta-usuario').textContent = detalleUsuario;
         document.getElementById('modal-respuesta-correcta').textContent = detalleCorrecto;
@@ -1305,7 +1424,7 @@ class JuegoTiemposVerbos {
         document.getElementById('modal-explicacion-contenido').innerHTML = this.construirTeoriaFormasHtml(item);
 
         document.getElementById('modal-explicacion').classList.add('active');
-        if (esCorrecto) this.celebrarAcierto();
+        if (esCorrecto) this.celebrarAcierto(esNuevoRecord);
     }
 
     construirTeoriaFormasHtml(item) {
@@ -1386,10 +1505,11 @@ class JuegoTiemposVerbos {
         } else {
             this.errores++;
         }
+        const esNuevoRecord = this.registrarResultado(conjugacion, esCorrecto);
         this.actualizarEstadisticas();
 
         document.getElementById('btn-responder').disabled = true;
-        this.mostrarModalExplicacionAuxiliar(conjugacion, auxiliarSeleccionado, formaSeleccionada, esCorrecto);
+        this.mostrarModalExplicacionAuxiliar(conjugacion, auxiliarSeleccionado, formaSeleccionada, esCorrecto, esNuevoRecord);
     }
 
     verificarRespuestaTiempos(conjugacion) {
@@ -1430,11 +1550,12 @@ class JuegoTiemposVerbos {
         } else {
             this.errores++;
         }
+        const esNuevoRecord = this.registrarResultado(conjugacion, esCorrecto);
         this.actualizarEstadisticas();
 
         // Mostrar siempre el modal de explicación (acierto o error) para aprender más.
         document.getElementById('btn-responder').disabled = true;
-        this.mostrarModalExplicacion(conjugacion, respuestasUsuario, esCorrecto);
+        this.mostrarModalExplicacion(conjugacion, respuestasUsuario, esCorrecto, esNuevoRecord);
     }
 
     // Devuelve el "hack" más relevante según el tiempo/tipo de la oración.
@@ -1453,6 +1574,7 @@ class JuegoTiemposVerbos {
         document.getElementById('total-preguntas').textContent = this.conjugaciones.length;
         document.getElementById('aciertos').textContent = this.aciertos;
         document.getElementById('errores').textContent = this.errores;
+        document.getElementById('racha-actual').textContent = this.rachaActual;
 
         // Actualizar barra de progreso
         const progreso = ((this.preguntaActual) / this.conjugaciones.length) * 100;
@@ -1466,6 +1588,10 @@ class JuegoTiemposVerbos {
         document.getElementById('errores-final').textContent = this.errores;
         document.getElementById('porcentaje-final').textContent = `${porcentaje}%`;
 
+        // La lección de participio/reglas del -ed solo aplica al terminar el Modo Formas.
+        const leccion = document.getElementById('leccion-formas');
+        if (leccion) leccion.classList.toggle('oculto', this.modo !== 'formas');
+
         this.mostrarPantalla('resultados');
     }
 
@@ -1473,7 +1599,7 @@ class JuegoTiemposVerbos {
         this.iniciarJuego();
     }
 
-    mostrarModalExplicacion(conjugacion, respuestasUsuario, esCorrecto) {
+    mostrarModalExplicacion(conjugacion, respuestasUsuario, esCorrecto, esNuevoRecord) {
         // Configurar el contenido del modal header con la oración en inglés y su traducción
         document.getElementById('modal-oracion-ingles').textContent = conjugacion.conjugacion;
         document.getElementById('modal-oracion-traduccion').textContent = conjugacion.traduccionConjugacion;
@@ -1490,6 +1616,7 @@ class JuegoTiemposVerbos {
             resultado.textContent = '❌ Incorrecto';
             resultado.className = 'modal-resultado incorrecto';
         }
+        this.mostrarBannerRacha(esNuevoRecord);
 
         // Comparar respuestas; si acertó, ambas son iguales, así que se oculta.
         const respuestasUsuarioTexto = `${respuestasUsuario.tiempo} - ${respuestasUsuario.variacion} - ${respuestasUsuario.tipo}`;
@@ -1504,13 +1631,13 @@ class JuegoTiemposVerbos {
 
         // Mostrar el modal
         document.getElementById('modal-explicacion').classList.add('active');
-        if (esCorrecto) this.celebrarAcierto();
+        if (esCorrecto) this.celebrarAcierto(esNuevoRecord);
     }
 
     // Versión del modal de explicación para el Modo Auxiliares: la oración en
     // inglés recién se revela acá, y la comparación es de auxiliares (no de
     // tiempo/variación/tipo).
-    mostrarModalExplicacionAuxiliar(conjugacion, auxiliarSeleccionado, formaSeleccionada, esCorrecto) {
+    mostrarModalExplicacionAuxiliar(conjugacion, auxiliarSeleccionado, formaSeleccionada, esCorrecto, esNuevoRecord) {
         document.getElementById('modal-oracion-ingles').textContent = conjugacion.conjugacion;
         document.getElementById('modal-oracion-traduccion').textContent = conjugacion.traduccionConjugacion;
 
@@ -1522,6 +1649,7 @@ class JuegoTiemposVerbos {
             resultado.textContent = '❌ Incorrecto';
             resultado.className = 'modal-resultado incorrecto';
         }
+        this.mostrarBannerRacha(esNuevoRecord);
 
         const fraseUsuario = `${auxiliarSeleccionado || '(sin responder)'} + ${formaSeleccionada || '(sin responder)'}`;
         const fraseCorrecta = `${conjugacion.auxiliarCanonico} + ${conjugacion.formaCorrecta}`;
@@ -1535,16 +1663,30 @@ class JuegoTiemposVerbos {
         document.querySelector('.auxiliar-info').style.display = 'none';
 
         document.getElementById('modal-explicacion').classList.add('active');
-        if (esCorrecto) this.celebrarAcierto();
+        if (esCorrecto) this.celebrarAcierto(esNuevoRecord);
     }
 
-    // Efecto de confeti simple (CSS/JS puro) al acertar una pregunta.
-    celebrarAcierto() {
+    // Muestra/oculta el aviso de "nuevo récord de racha" dentro del modal.
+    mostrarBannerRacha(esNuevoRecord) {
+        const banner = document.getElementById('modal-racha-record');
+        if (!banner) return;
+        if (esNuevoRecord) {
+            banner.textContent = `🏆 ¡Nuevo récord de racha: ${this.rachaActual}!`;
+            banner.classList.remove('oculto');
+        } else {
+            banner.classList.add('oculto');
+        }
+    }
+
+    // Efecto de confeti simple (CSS/JS puro) al acertar una pregunta. Con más
+    // piezas y más duración cuando se acaba de superar el récord de racha.
+    celebrarAcierto(esNuevoRecord) {
         const contenedor = document.getElementById('confeti-container');
         if (!contenedor) return;
         contenedor.innerHTML = '';
         const colores = ['#58cc02', '#1cb0f6', '#ff9600', '#ff4b4b', '#8549ba', '#ffc800'];
-        for (let i = 0; i < 24; i++) {
+        const cantidad = esNuevoRecord ? 48 : 24;
+        for (let i = 0; i < cantidad; i++) {
             const pieza = document.createElement('div');
             pieza.className = 'confeti';
             pieza.style.left = `${Math.random() * 100}%`;
@@ -1615,6 +1757,7 @@ class JuegoTiemposVerbos {
         switch (pantalla) {
             case 'inicio':
                 document.getElementById('pantalla-inicio').classList.remove('oculto');
+                this.actualizarResumenProgreso();
                 break;
             case 'juego':
                 document.getElementById('pantalla-juego').classList.remove('oculto');
