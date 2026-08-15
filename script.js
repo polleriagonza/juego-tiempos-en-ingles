@@ -797,6 +797,19 @@ class JuegoTiemposVerbos {
         document.getElementById('btn-reiniciar').addEventListener('click', () => this.reiniciarJuego());
         document.getElementById('btn-inicio').addEventListener('click', () => this.mostrarPantalla('inicio'));
 
+        // Salir/reiniciar en medio de una partida (pantalla de juego): piden
+        // confirmación porque descartan el progreso actual.
+        document.getElementById('btn-reiniciar-juego').addEventListener('click', () => {
+            if (confirm('¿Reiniciar el juego? Perderás el progreso de esta partida.')) {
+                this.reiniciarJuego();
+            }
+        });
+        document.getElementById('btn-salir-juego').addEventListener('click', () => {
+            if (confirm('¿Volver al inicio? Perderás el progreso de esta partida.')) {
+                this.mostrarPantalla('inicio');
+            }
+        });
+
         // Eventos para las opciones
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('opcion')) {

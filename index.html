@@ -65,7 +65,13 @@
         <!-- Pantalla del juego -->
         <div id="pantalla-juego" class="pantalla oculto">
             <div class="game-info">
-                <span class="modo-badge" id="modo-badge">🕒 Modo Tiempos</span>
+                <div class="game-info-top">
+                    <span class="modo-badge" id="modo-badge">🕒 Modo Tiempos</span>
+                    <div class="game-info-acciones">
+                        <button id="btn-reiniciar-juego" class="btn-icono" title="Reiniciar juego" aria-label="Reiniciar juego">🔄</button>
+                        <button id="btn-salir-juego" class="btn-icono" title="Volver al inicio" aria-label="Volver al inicio">🏠</button>
+                    </div>
+                </div>
                 <div class="progress-bar">
                     <div id="progress-fill" class="progress-fill"></div>
                 </div>

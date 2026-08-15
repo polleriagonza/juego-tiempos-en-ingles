@@ -614,6 +614,14 @@ header p {
     text-align: center;
 }
 
+.game-info-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
 .modo-badge {
     display: inline-block;
     background: var(--azul-suave);
@@ -623,7 +631,36 @@ header p {
     font-size: 0.72rem;
     padding: 4px 12px;
     border-radius: 999px;
-    margin-bottom: 8px;
+}
+
+.game-info-acciones {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-icono {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--borde);
+    border-radius: 10px;
+    background: white;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+
+.btn-icono:hover {
+    border-color: var(--azul);
+    background: var(--azul-suave);
+}
+
+.btn-icono:active {
+    transform: translateY(1px);
 }
 
 .progress-bar {
